@@ -1,0 +1,218 @@
+\documentclass[a4, 12pt]{article}
+\usepackage{booktabs} % horizontal lines tables 
+		
+\renewcommand{\arraystretch}{1.1}			
+\setlength{\tabcolsep}{8pt}
+
+\usepackage[left=2.4cm,right=2.4cm]{geometry}
+
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{datetime}
+\usepackage[round, sort]{natbib}
+\usepackage{cite}
+\usepackage[bottom]{footmisc}
+\usepackage{footnote}
+\usepackage{gensymb}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{amsfonts} % Math fons
+\usepackage{url}
+
+\usepackage[pdftex]{graphicx}
+\usepackage{wrapfig}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage{color, colortbl}
+\usepackage[margin=1cm]{caption}	
+
+% Custom caption type
+\DeclareCaptionType{capeq}[][List of equations]
+\captionsetup[capeq]{name=Equation}
+\captionsetup{font=scriptsize}
+
+\lstset{captionpos=b}
+    
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{
+\normalfont \normalsize 
+\textsc{West Nile Virus Challenge} \\ [25pt] 
+\Large Background Info\\ 
+\horrule{2pt} \\[0.5cm]
+}
+\author{
+    Franziska Burger
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+%\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\section{Weather Data}
+Some definitions:
+\begin{itemize}
+\item \emph{maximum temperature:} highest temperature measured on that day
+\item \emph{minimum temperature:} lowest temperature measured on that day
+\item \emph{average temperature:} mean of all measured temperatures on that day
+\item \emph{depart}: departure from normal (apparently 'normal' is computed every 10 years for the past 30 years, so the predictions from 2007-2010 are based on data from 1971-2000 while those from 2011-2014 would be based on data from 1981-2010)
+\item \emph{dew point:} the temperature to which the air would have to cool (at constant pressure and constant water vapor content) in order to reach saturation (100\% relative humidity)
+\item \emph{wet bulb:} The wet-bulb temperature is the temperature a parcel of air would have if it were cooled to saturation by the evaporation of water into it, with the latent heat being supplied by the parcel
+\item \emph{heat or cool:} Degree day is a quantitative index demonstrated to reflect demand for energy to heat or cool houses and businesses.A mean daily temperature (average of the daily maximum and minimum temperatures) of 65\degree F is the base for both heating and cooling degree day computations. Heating degree days are summations of negative differences between the mean daily temperature and the 65\degree F base; cooling degree days are summations of positive differences from the same base. This means that if average temp smaller than 65\degree F, $heat = 65- T_{avg}$, if it is larger than 65\degree F, $cool = T_avg - 65$
+\item \emph{sunrise/sunset:} time in 24h format without colon, i.e. 425 -> 4:25 AM 1945 -> 7:45 PM
+\item \emph{code sum:} meanings of abbreviations can be found in the noaa\_weather pdf, empty probably means there were no significant weather phenomena
+\item \emph{depth/water1:} contain no information
+\item \emph{snow fall:} measures how high the snow was from the ground in inches and tenths (only contains some Ts and a 0.1 once... apparently it does not snow a lot in Chicago)
+\item \emph{precipitation total:} equivalent to snow fall but water (rainfall and melted now) in inches and hundreths
+\item \emph{station pressure:} air pressure at the station in inHg
+\item \emph{sea level pressure:} air pressure at sea level in inHg
+\item \emph{resultant speed:} the vectorial average of all wind speeds on that day
+\item \emph{resultant direction:} the vectorial average of all wind directions on that day
+\item \emph{average speed:} scalar average of wind speeds
+\end{itemize}
+
+General info:
+\begin{itemize}
+\item measured at two weather stations: 
+\begin{itemize}
+\item \emph{Station 1:} CHICAGO O'HARE INTERNATIONAL AIRPORT Lat: 41.995 Lon: -87.933 Elev: 662 ft. above sea level
+\item \emph{Station 2:} CHICAGO MIDWAY INTL ARPT Lat: 41.786 Lon: -87.752 Elev: 612 ft. above sea level
+\end{itemize}
+\item measured every day for 5 months (May-October) and all years of interest (2007-2014)
+\end{itemize}
+
+
+\section{Mosquitos}
+Again a definition:
+\begin{itemize}
+\item \emph{vector:} living organisms that can transmit infectious diseases between humans or from animals to humans. Many of these vectors are bloodsucking insects, which ingest disease-producing microorganisms during a blood meal from an infected host (human or animal) and later inject it into a new host during their subsequent blood meal
+\item Mosquito species that participate in mosquito-bird-mosquito cycle are referred to as \textbf{amplification vectors}. Mosquito species that feed indiscriminately can transmit WNV to human, horses and other non-avian vertebrates are known as \textbf{bridging vectors}.
+\end{itemize}
+And some background info that may or may not be useful:\\
+Culex species
+\begin{itemize}
+\item 4-10mm in size
+\item developmental cycle of most species takes about two weeks in warm weather
+\item a culex mosquito may lay a raft of eggs every third night during its life span
+\item eggs hatch only in the presence of water and the larvae are obligately aquatic
+\item Culex usually live only a few weeks during the warm summer months; those females which emerge in late summer search for sheltered areas where they hibernate (diapause) until spring; warm weather brings them out in search of water on which to lay their eggs
+\item the most important of the Culex vectors are members of the Culex pipiens complex
+\item Culex pipiens is normally considered to be a bird feeder but some urban strains have a predilection for mammalian hosts and feed readily on humans
+\item Results suggest that Cx. salinarius is an important bridge vector to humans, while Cx. pipiens and Cx. restuans are more efficient enzootic vectors in the northeastern United States. \citep{molaei2006host}
+\item To date, 60 mosquito species have been found to be infected with WNV in North America; certain Culex spp. appear to be primary vectors, depending on region (4). In the northeastern United States, Culex pipiens, Cx. restuans, and Cx. salinarius have been implicated as the principal vectors because they are physiologically competent (5), frequently infected with the virus in nature, and closely associated with WNV transmission foci (6). \citep{molaei2006host}
+\item Observations in rural and urban sites in New York further indicate that Cx. pipiens and Cx. restuans are largely ornithophilic, whereas Cx. salinarius feeds more frequently on mammals (8), which supports the idea of a "bridge vector" role for this species. \citep{molaei2006host}
+\item One study indicated that C. pipiens mosquitoes in the northeastern USA shift their feeding behavior from highly competent American robins to mammals and humans in the late summer to early fall, coinciding with the emigration of this avian species.
+\item Many Culex mosquitoes can transmit WNV vertically - from parent through eggs and larva to offspring. It may be one of most important mechanism of WNV persistence in mosquito population.
+\end{itemize}
+
+
+\section{West Nile Virus}
+\begin{itemize}
+\item A species of FLAVIVIRUS. It can infect birds and mammals. In humans, it is seen most frequently in Africa, Asia, and Europe presenting as a silent infection or undifferentiated fever (WEST NILE FEVER). The virus appeared in North America for the first time in 1999. It is transmitted mainly by Culex spp mosquitoes which feed primarily on birds, but it can also be carried by the Asian Tiger mosquito, Aedes albopictus, which feeds mainly on mammals.
+\item WNv is maintained in nature in an enzootic (non-human equivalent of endemic - characteristic of a certain area) cycle between birds and ornithophilic (feed almost exclusively on avian blood) mosquitoes (predominantly Culex spp).
+\end{itemize}
+
+\section{Factors}
+\subsection{weather}
+Info is taken from \citet{ruiz2010local}
+\begin{itemize}
+\item  For example, the population size of Culex pipiens., the primary enzootic and epidemic vector in the eastern U.S. north of 36 degrees latitude, is often impacted negatively by large rain events due to the flushing of catch basins, a primary urban larval habitat, and the reduction of organic content in all ovipositing sites.
+\item By contrast, the vector Culex tarsalis generally responds positively to heavy precipitation, which provides the typical larval habitat in rural areas in the western part of the U.S.
+\item In semi-permanent wetlands, drought conditions can increase abundance of some vector populations as they result in more larval breeding sites with fewer competitors and mosquito predators
+\item Early season drought with subsequent wetting and low water table depth preceded amplification episodes for both WNv and St. Louis encephalitis virus in peninsular Florida, where Culex nigripalpus functions as the main vector
+\item Increased temperature is known to increase growth rates of vector populations, decrease the length of the gonotrophic cycle (interval between blood meals), shorten the extrinsic incubation period of the virus in the vector and increase the rate of virus evolution
+\item a correlation found between the number of days when daily maximum temperature exceeded a threshold (degree days), timing of a seasonal shift to a higher proportion of Culex pipiens among all Culex species, and the onset of the amplification phase of WNv transmission seasonally in Illinois
+\item Temperature has also been linked to the rate of evolution of the virus and warmer temperatures facilitated the displacement of the WNv NY99 genotype by the WN02 genotype
+\item At the same time, in one study, very high temperatures (above 30\degree C) reduced larval Culex tarsalis survival
+\item Our three research questions are: 1) Interannually: what are the conditions associated with higher mosquito infection in some years compared to others? 2) Intra-annually: what temporal characteristics of rainfall and temperature precede changes in mosquito infection and with what temporal lag? 3) Spatially: can the patterns of rainfall and temperature help explain the differences in mosquito infection across space?
+\item used pretty much exact same data as we are given
+\item authors calculated degree week (similar to degree day, see above) where Tmean is the average temperature in a week and Tbase = 22 deg C. The Tbase (threshold temperature) represents a weekly mean temperature that might affect growth or activity of an organism and was chosen empirically as the value that was most correlated with the mosquito infection rate.
+\item In addition to the single weeks’ precipitation measures, the weekly precipitation was smoothed using a 3-week and a 5-week moving average. These three different weekly measures of precipitation were included to provide several levels of smoothing for this variable.
+\item For spatial analysis, we created a 2000 m hexagon grid encompassing the two county study area and summarized all data for those units (N = 1,263). The hexagon size was chosen to equal about the same number of units as census tracts in the same area, but in contrast to tracts are of uniform size, providing a more neutral landscape unit. For mosquito infection, precipitation and temperature, we used a local moving average method of geographic interpolation [63,64] with inverse distance weighting (IDW) from the six closest points to create weekly GIS raster grid (100 m grid size) maps for each week and for each variable.  The “Z” values (also
+known as the support) for the IDW interpolation were based on the calculation of the MIR at the trap locations or the weather variables at the weather stations for which data were available for that week. For this step, we included data from five counties bordering Cook and DuPage counties to better estimate values at the edge of the study area. In this way, we estimated values for each raster grid in the study region. The raster grid-based data were then summarized for the 2000 m hexagons with ArcGIS using the average of all raster grid cells within each single hexagonal geographic unit.
+\item  mosquito infection were notably high in 2005 and 2006 compared to 2004, 2007 and 2008. The years with larger numbers of cases (2002, 2005 and 2006) also had warmer than average weather during the period prior to week 35, but only 2002 and 2005 had less than average precipitation. The accumulated Degree Week (DW) value at week 35 was highest in 2002 and 2005, at approximately 30, or five times higher than the lowest DW of 6, in 2004. The amount of rain was especially low in 2005 (2/3 of normal).
+\item In the weekly patterns of MIR, both 2005 and 2006
+have a unimodal pattern with peak MIR at week 33, and
+the maximum weekly MIR for those years was above
+14 per 1000 mosquitoes (Figure 2). In the year 2004, the
+mosquito infection rate was low, and the pattern was
+bimodal, with a relatively strong early peak. The years
+2007 and 2008 both had low virus activity, with 2007
+being distinguished by a late season increase in mosquito
+infection at week 42 and 2008 having a peak
+about one week later than other years.
+\item strong
+negative correlation between MIR and precipitation
+about 10 to 12 weeks earlier in the years 2004, 2005 and
+2006 (Figure 3; Additional File 1: Exploratory, Figure A).
+This did not hold true in 2007, however, where there
+was a strong positive correlation between precipitation
+and MIR about 10 weeks prior to the MIR values.
+\item   Overall, these
+results suggest that drought followed by wetting may be
+associated with higher MIR in some years. The difference
+among years is notable, indicating that precipitation
+measures alone are not sufficient to predict the
+timing of amplification of the virus.
+\item  select
+the temporal lag of 1 week for use in the development
+of the linear model
+\item the
+years with higher differences in DW are also those when
+Figure 3 Correlation between weekly MIR and precipitation. Weekly values are averaged on 1, 3 and 5 weeks at different lags during each
+year from 2004 to 2007 in Cook and DuPage counties, Illinois. There are 18 weeks with 15 possible temporal lags for each year.
+\item both MIR and human illness were higher (Figure 4 and
+Table 1). The differences in DW between higher and
+lower MIR years is most clear in weeks 29 to 33, when
+amplification is most likely to occur.
+\item we developed linear regression models to determine the best-fit model for all of the years.
+\item Finally, we found that
+the MIR itself is a first order auto-regressive (AR) process,
+so to simulate the MIR for any specific week, the
+MIR measured in the previous week was also included
+as one of the possible explanatory factors
+
+\end{itemize}
+\subsection{landscape}
+\begin{itemize}
+\item Though many published reports characterize associations
+between climatic and landscape factors and WNv
+occurrence, broad patterns have remained elusive as
+inconsistent results make generalization difficult. A
+review of 15 publications identified common landscape
+variables used to predict risk of WNv transmission,
+including distance to riparian corridor, vegetation measures,
+slope, elevation, human population numbers,
+housing and road density, type of urban land use, race,
+income, housing age, and host community structure
+[12-26]Though many published reports characterize associations
+between climatic and landscape factors and WNv
+occurrence, broad patterns have remained elusive as
+inconsistent results make generalization difficult. A
+review of 15 publications identified common landscape
+variables used to predict risk of WNv transmission,
+including distance to riparian corridor, vegetation measures,
+slope, elevation, human population numbers,
+housing and road density, type of urban land use, race,
+income, housing age, and host community structure \citep{ruiz2010local}
+\end{itemize}
+
+\newpage
+
+\bibliographystyle{abbrvnat}
+\bibliography{library}
+
+\end{document}
