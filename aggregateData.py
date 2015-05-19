@@ -1,4 +1,3 @@
-from os import listdir, path
 #from pandas import io
 import pandas as pd
 import numpy as np
@@ -10,10 +9,12 @@ import datetime as dt
 """
 read in training data
 """
-data_path = 'c:/Users/Franziska/Documents/GitHub/pikki-virus'
-files = listdir(data_path)
-df_train = pd.read_csv(path.join(data_path, 'train.csv'))
-#train_header = list(df_train.columns.values)
+df_train = pd.read_csv('train.csv')
+
+"""
+read in weather data
+"""
+df_weather = pd.read_csv('weather.csv')
 
 """
 what are the unique dates of measurements?
@@ -36,9 +37,9 @@ def haversine(lat1,long1,lat2,long2):
     long1=radians(long1)
     lat2=radians(lat2)
     long2=radians(long2)
-    long_dist = long_j - long_i
-    lat_dist = lat_j - lat_i
-    a = (sin(lat_dist/2))**2 + cos(lat_i) * cos(lat_j) * (sin(long_dist/2))**2
+    long_dist = long2 - long1
+    lat_dist = lat2 - lat1
+    a = (sin(lat_dist/2))**2 + cos(lat1) * cos(lat2) * (sin(long_dist/2))**2
     c = 2 * atan2(sqrt(a), sqrt(1-a))
     distance = earth_radius * c
     return distance
@@ -97,3 +98,66 @@ def str_to_date(str):
     return dt.datetime.strptime(str, '%Y-%m-%d').date()
 
 df_train.Date = df_train.Date.map(str_to_date)     
+
+"""
+for each trap location, calculate which weather station is closer and store in a dataframe.
+If difference between distances is smaller than 5km, assign 0. This will later indicate that
+the average of the measurements should be used.
+"""
+lat_station1= 41.995
+lon_station1= -87.933 
+lat_station2= 41.786
+lon_station2= -87.752
+
+def closer_ws(trap_location):
+    lat_trap = trap_location['latitude']
+    lon_trap = trap_location['longitude']
+    dist1 = haversine(lat_trap, lon_trap, lat_station1, lon_station1)
+    dist2 = haversine(lat_trap, lon_trap, lat_station2, lon_station2)
+    #if difference between distances to weather stations is less than 5km, assign 0
+    if np.abs(dist1-dist2) < 5:
+        ws_id = 0
+    #if distance to ws1 is smaller, ws1 is closer ws and vice versa
+    elif dist1 < dist2:
+        ws_id = 1
+    else: 
+        ws_id=2
+    return ws_id
+        
+
+df_trap_loc['closer_station']= df_trap_loc.apply(closer_ws, axis=1)
+
+"""
+calculate average weekly temperature, with Jan 1st 2007 being starting day of
+first week. This is calculated separately for the two weather stations
+TODO: not separated by years yet. Should be done, since as it is now, some days from
+previous fall may be averaged together with days in May
+"""
+#add new column for weekly temp average
+df_weather['Tavg_week']=pd.Series(index=df_weather.index)
+#group average daily temp column by weather station
+for station_id, station in df_weather.groupby(['Station'])['Tavg']:
+   #chunk this into 7-day chunks 
+   for ind, week in station.groupby(np.arange(len(station))//7):
+        #calculate average temp for 7 days
+        week_temp = week.mean()
+        #save in column Tavg_week
+        for index in week.index:
+            df_weather.Tavg_week[index]=week_temp
+            
+"""
+add two more columns to weather data that say whether it was a heat week or a cool
+week (similar to heat/cool columns that are already in the data for single days).
+Since it was found optimal in the paper by Ruiz, here 22 degrees Celcius (71.6 degrees Fahrenheit)
+are used.
+"""
+def heatcool(temp):
+    return temp - 71.6
+#add new columns for Heat Degree Week and Cool Degree Week
+df_weather['heat_dw'] = df_weather.Tavg_week.apply(heatcool)
+df_weather['cool_dw'] = df_weather.heat_dw
+#for heat week keep temperature differences above Tbase
+df_weather.heat_dw[df_weather.heat_dw < 0] = 0
+#for cool week keep those below Tbase
+df_weather.cool_dw[df_weather.cool_dw > 0] = 0
+df_weather.cool_dw = df_weather.cool_dw.apply(np.abs)
