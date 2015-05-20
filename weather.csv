@@ -1,4 +1,4 @@
-Station,Date,Tmax,Tmin,Tavg,Depart,DewPoint,WetBulb,Heat,Cool,Sunrise,Sunset,CodeSum,Depth,Water1,SnowFall,Precip0.005o0.005al,StnPressure,SeaLevel,ResultSpeed,ResultDir,AvgSpeed
+Station,Date,Tmax,Tmin,Tavg,Depart,DewPoint,WetBulb,Heat,Cool,Sunrise,Sunset,CodeSum,Depth,Water1,SnowFall,Precipitation,StnPressure,SeaLevel,ResultSpeed,ResultDir,AvgSpeed
 1,5/1/2007,83,50,67,14,51,56,0,2,448,1849, ,0,M,0,0,29.1,29.82,1.7,27,9.2
 2,5/1/2007,84,52,68,M,51,57,0,3,-,-, ,M,M,M,0,29.18,29.82,2.7,25,9.6
 1,5/2/2007,59,42,51,-3,42,47,14,0,447,1850,BR,0,M,0,0,29.38,30.09,13,4,13.4

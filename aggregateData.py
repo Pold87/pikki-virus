@@ -95,9 +95,10 @@ closest_ten_traps = trap_distance_matrix.apply(find_closest_per_trap, axis=0, ar
 convert dates into datetime.date objects so that differences in days can be determined
 """
 def str_to_date(str):
-    return dt.datetime.strptime(str, '%Y-%m-%d').date()
+    return dt.datetime.strptime(str, '%m/%d/%Y').date()
 
-df_train.Date = df_train.Date.map(str_to_date)     
+df_train.Date = df_train.Date.map(str_to_date) 
+df_weather.Date = df_weather.Date.map(str_to_date)    
 
 """
 for each trap location, calculate which weather station is closer and store in a dataframe.
@@ -128,22 +129,26 @@ def closer_ws(trap_location):
 df_trap_loc['closer_station']= df_trap_loc.apply(closer_ws, axis=1)
 
 """
-calculate average weekly temperature, with Jan 1st 2007 being starting day of
+calculate average weekly weather variable (temp/precipitation), with Jan 1st 2007 being starting day of
 first week. This is calculated separately for the two weather stations
 TODO: not separated by years yet. Should be done, since as it is now, some days from
 previous fall may be averaged together with days in May
 """
-#add new column for weekly temp average
-df_weather['Tavg_week']=pd.Series(index=df_weather.index)
-#group average daily temp column by weather station
-for station_id, station in df_weather.groupby(['Station'])['Tavg']:
-   #chunk this into 7-day chunks 
-   for ind, week in station.groupby(np.arange(len(station))//7):
-        #calculate average temp for 7 days
-        week_temp = week.mean()
-        #save in column Tavg_week
-        for index in week.index:
-            df_weather.Tavg_week[index]=week_temp
+def weekly_avrg(df,new_col_name,var_col_name):
+    #add new column for weekly temp average
+    df[new_col_name]=pd.Series(index=df.index)
+    #group average daily temp column by weather station
+    for station_id, station in df.groupby(['Station'])[var_col_name]:
+       #chunk this into 7-day chunks 
+       for ind, week in station.groupby(np.arange(len(station))//7):
+            #calculate average temp for 7 days
+            week_avrg = week.mean()
+            #save in column Tavg_week
+            for index in week.index:
+                df.loc[index,new_col_name]=week_avrg
+            
+weekly_avrg(df_weather,'Tavg_week','Tavg')
+weekly_avrg(df_weather,'precip_week','Precipitation')
             
 """
 add two more columns to weather data that say whether it was a heat week or a cool
@@ -151,13 +156,50 @@ week (similar to heat/cool columns that are already in the data for single days)
 Since it was found optimal in the paper by Ruiz, here 22 degrees Celcius (71.6 degrees Fahrenheit)
 are used.
 """
-def heatcool(temp):
+def heatcoolhelper(temp):
     return temp - 71.6
 #add new columns for Heat Degree Week and Cool Degree Week
-df_weather['heat_dw'] = df_weather.Tavg_week.apply(heatcool)
+df_weather['heat_dw'] = df_weather.Tavg_week.apply(heatcoolhelper)
 df_weather['cool_dw'] = df_weather.heat_dw
 #for heat week keep temperature differences above Tbase
 df_weather.heat_dw[df_weather.heat_dw < 0] = 0
 #for cool week keep those below Tbase
 df_weather.cool_dw[df_weather.cool_dw > 0] = 0
 df_weather.cool_dw = df_weather.cool_dw.apply(np.abs)
+
+"""
+add a column to training data that says whether measurement day was in a cooling degree
+week or heating degree week at closer weather station
+TODO: check if this cannot be made more efficient by grouping by date and trap, because
+currently the same value is assigned to many rows, and it is probably faster to assign all rows
+with same value at once
+"""
+def heatcool(row,weather_var):
+    #Extract which WS is closer
+    closer= df_trap_loc.loc[row.Trap,'closer_station']
+    #How much of a heat/cool week was it on measurement day
+    week_ws1= df_weather[weather_var][(df_weather.Date == row.Date) & (df_weather.Station==1)]
+    week_ws2= df_weather[weather_var][(df_weather.Date == row.Date) & (df_weather.Station==2)]
+    #if both weather station are approximately same distance away, average data together
+    if closer==0:
+        week= (week_ws1.item() + week_ws2.item())/2
+    #if one station is closer than the other, take the measurement of that station
+    elif closer==1:
+        week= week_ws1.item()
+    else:
+        week= week_ws2.item()
+    return week
+    
+df_train['heat_week']=df_train.apply(heatcool, axis=1, args= ('heat_dw',))
+df_train['cool_week']=df_train.apply(heatcool, axis=1, args= ('cool_dw',))
+df_train['precip_week']=df_train.apply(heatcool, axis=1, args=('precip_week',))
+
+
+
+
+        
+        
+        
+        
+
+            
