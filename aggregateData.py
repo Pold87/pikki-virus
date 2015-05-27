@@ -98,7 +98,13 @@ def str_to_date(str):
     return dt.datetime.strptime(str, '%m/%d/%Y').date()
 
 df_train.Date = df_train.Date.map(str_to_date) 
-df_weather.Date = df_weather.Date.map(str_to_date)    
+df_weather.Date = df_weather.Date.map(str_to_date)
+
+#add additional column "year" to weather dataframe in order to group the data by year
+def extract_year(date):
+    return date.year
+
+df_weather['Year']=df_weather.Date.apply(extract_year)
 
 """
 for each trap location, calculate which weather station is closer and store in a dataframe.
@@ -129,16 +135,14 @@ def closer_ws(trap_location):
 df_trap_loc['closer_station']= df_trap_loc.apply(closer_ws, axis=1)
 
 """
-calculate average weekly weather variable (temp/precipitation), with Jan 1st 2007 being starting day of
+calculate average weekly weather variable (temp/precipitation), with May 1st 2007 being starting day of
 first week. This is calculated separately for the two weather stations
-TODO: not separated by years yet. Should be done, since as it is now, some days from
-previous fall may be averaged together with days in May
 """
 def weekly_avrg(df,new_col_name,var_col_name):
     #add new column for weekly temp average
     df[new_col_name]=pd.Series(index=df.index)
     #group average daily temp column by weather station
-    for station_id, station in df.groupby(['Station'])[var_col_name]:
+    for station_id, station in df.groupby(['Station','Year'])[var_col_name]:
        #chunk this into 7-day chunks 
        for ind, week in station.groupby(np.arange(len(station))//7):
             #calculate average temp for 7 days
@@ -156,10 +160,11 @@ week (similar to heat/cool columns that are already in the data for single days)
 Since it was found optimal in the paper by Ruiz, here 22 degrees Celcius (71.6 degrees Fahrenheit)
 are used.
 """
-def heatcoolhelper(temp):
+def degree_week(temp):
     return temp - 71.6
+    
 #add new columns for Heat Degree Week and Cool Degree Week
-df_weather['heat_dw'] = df_weather.Tavg_week.apply(heatcoolhelper)
+df_weather['heat_dw'] = df_weather.Tavg_week.apply(degree_week)
 df_weather['cool_dw'] = df_weather.heat_dw
 #for heat week keep temperature differences above Tbase
 df_weather.heat_dw[df_weather.heat_dw < 0] = 0
@@ -172,12 +177,12 @@ add a column to training data that says whether measurement day was in a cooling
 week or heating degree week at closer weather station
 TODO: check if this cannot be made more efficient by grouping by date and trap, because
 currently the same value is assigned to many rows, and it is probably faster to assign all rows
-with same value at once
+that get same value at once
 """
-def heatcool(row,weather_var):
+def add_weather_var(row,weather_var):
     #Extract which WS is closer
     closer= df_trap_loc.loc[row.Trap,'closer_station']
-    #How much of a heat/cool week was it on measurement day
+    #What was the weather variable like on day of interest
     week_ws1= df_weather[weather_var][(df_weather.Date == row.Date) & (df_weather.Station==1)]
     week_ws2= df_weather[weather_var][(df_weather.Date == row.Date) & (df_weather.Station==2)]
     #if both weather station are approximately same distance away, average data together
@@ -190,9 +195,24 @@ def heatcool(row,weather_var):
         week= week_ws2.item()
     return week
     
-df_train['heat_week']=df_train.apply(heatcool, axis=1, args= ('heat_dw',))
-df_train['cool_week']=df_train.apply(heatcool, axis=1, args= ('cool_dw',))
-df_train['precip_week']=df_train.apply(heatcool, axis=1, args=('precip_week',))
+df_train['heat_week']=df_train.apply(add_weather_var, axis=1, args= ('heat_dw',))
+df_train['cool_week']=df_train.apply(add_weather_var, axis=1, args= ('cool_dw',))
+df_train['precip_week']=df_train.apply(add_weather_var, axis=1, args=('precip_week',))
+
+"""
+in the paper by ruiz a 3-week and a 5-week moving window are calculated over the
+precipitation. This method calculates an x-week moving window for the average of
+a specific weather variable w_var.
+"""
+def mov_window(chunk,x,w_var):
+    #iterate over each group by  
+    chunk[str(x) + "_week_avrg" + w_var] = pd.rolling_mean(chunk[w_var],window=7*x, min_periods=1)
+    return chunk
+
+df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 3, 'Precipitation')
+df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 5, 'Precipitation')
+
+
 
 
 
