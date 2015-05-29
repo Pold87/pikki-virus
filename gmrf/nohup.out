@@ -1,0 +1,13 @@
+Loading required package: sp
+Loading required package: Matrix
+Loading required package: methods
+Loading required package: splines
+
+
+*** ERROR *** 	inla_parse_ffield: section [Date]: field [SEASON] is void: [31557600000]
+
+Error in inla.inlaprogram.has.crashed() : 
+  The inla-program exited with an error. Unless you interupted it yourself, please rerun with verbose=TRUE and check the output carefully.
+  If this does help; please contact the developers at <help@r-inla.org>.
+Calls: inla -> inla.inlaprogram.has.crashed
+Execution halted
