@@ -55,22 +55,22 @@ for name, group in df_train.groupby('Trap'):
     group.reset_index(inplace=True)   
     df_trap_loc.ix[name,:] = [group.ix[0,'Latitude'], group.ix[0,'Longitude']]
 
-for i in unique_traps:
+for trap1 in unique_traps:
     #ensures that symmetrical values in matrix are only computed once
     k=len(unique_traps)-1 
     unique_traps_shorter = np.delete(unique_traps, k, axis=0) 
     k=k-1
     #get lat and long of first trap
-    lat_i = df_trap_loc.loc[i,'latitude']
-    long_i = df_trap_loc.loc[i,'longitude']
-    for j in unique_traps_shorter:
+    lat_trap1 = df_trap_loc.loc[trap1,'latitude']
+    long_trap1 = df_trap_loc.loc[trap1,'longitude']
+    for trap2 in unique_traps_shorter:
         #get lat and long of second trap
-        lat_j = df_trap_loc.loc[j,'latitude']
-        long_j = df_trap_loc.loc[j,'longitude']
+        lat_trap2 = df_trap_loc.loc[trap2,'latitude']
+        long_trap2 = df_trap_loc.loc[trap2,'longitude']
         #compute the haversine distance between the two traps and fill in twice in matrix
-        dist= haversine(lat_i,long_i,lat_j,long_j)
-        trap_distance_matrix.loc[i,j]=dist
-        trap_distance_matrix.loc[j,i]=dist
+        dist= haversine(lat_trap1,long_trap1,lat_trap2,long_trap2)
+        trap_distance_matrix.loc[trap1,trap2]=dist
+        trap_distance_matrix.loc[trap2,trap1]=dist
     
 """
 find n closest traps to each trap
@@ -107,7 +107,7 @@ def extract_year(date):
 df_weather['Year']=df_weather.Date.apply(extract_year)
 
 """
-for each trap location, calculate which weather station is closer and store in a dataframe.
+for each trap location, calculate which weather station is closer and store in a dataframe df_trap_loc.
 If difference between distances is smaller than 5km, assign 0. This will later indicate that
 the average of the measurements should be used.
 """
@@ -173,6 +173,19 @@ df_weather.cool_dw[df_weather.cool_dw > 0] = 0
 df_weather.cool_dw = df_weather.cool_dw.apply(np.abs)
 
 """
+in the paper by ruiz a 3-week and a 5-week moving window are calculated over the
+precipitation. This method calculates an x-week moving window for the average of
+a specific weather variable w_var.
+"""
+def mov_window(chunk,x,w_var):
+    #iterate over each group by  
+    chunk[str(x) + "_week_avrg" + w_var] = pd.rolling_mean(chunk[w_var],window=7*x, min_periods=1)
+    return chunk
+
+df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 3, 'Precipitation')
+df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 5, 'Precipitation')
+
+"""
 add a column to training data that says whether measurement day was in a cooling degree
 week or heating degree week at closer weather station
 TODO: check if this cannot be made more efficient by grouping by date and trap, because
@@ -198,19 +211,10 @@ def add_weather_var(row,weather_var):
 df_train['heat_week']=df_train.apply(add_weather_var, axis=1, args= ('heat_dw',))
 df_train['cool_week']=df_train.apply(add_weather_var, axis=1, args= ('cool_dw',))
 df_train['precip_week']=df_train.apply(add_weather_var, axis=1, args=('precip_week',))
+df_train['precip_3week']=df_train.apply(add_weather_var, axis=1, args=('3_week_avrgPrecipitation',))
+df_train['precip_5week']=df_train.apply(add_weather_var, axis=1, args=('5_week_avrgPrecipitation',))
 
-"""
-in the paper by ruiz a 3-week and a 5-week moving window are calculated over the
-precipitation. This method calculates an x-week moving window for the average of
-a specific weather variable w_var.
-"""
-def mov_window(chunk,x,w_var):
-    #iterate over each group by  
-    chunk[str(x) + "_week_avrg" + w_var] = pd.rolling_mean(chunk[w_var],window=7*x, min_periods=1)
-    return chunk
 
-df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 3, 'Precipitation')
-df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 5, 'Precipitation')
 
 
 
