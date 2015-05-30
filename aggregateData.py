@@ -41,8 +41,8 @@ def closer_ws(trap_location):
     lat_station2 = 41.786
     lon_station2 = -87.752
     
-    lat_trap = trap_location['latitude']
-    lon_trap = trap_location['longitude']
+    lat_trap = trap_location['Latitude']
+    lon_trap = trap_location['Longitude']
     dist1 = haversine(lat_trap, lon_trap, lat_station1, lon_station1)
     dist2 = haversine(lat_trap, lon_trap, lat_station2, lon_station2)
     
@@ -291,55 +291,30 @@ def load_data(path='train.csv'):
     # read in weather data
     df_weather = load_weather()
 
-    df_train = pd.read_csv(path)
-    df_train.Date = df_train.Date.map(str_to_date)
+    df = pd.read_csv(path)
+    df.Date = df.Date.map(str_to_date)
 
-    df_trap_loc = create_trap_df(df_train)
-    
-    df_train['heat_week'] = df_train.apply(add_weather_var,
-                                           axis=1,
-                                           args=(df_weather, df_trap_loc, 'heat_dw',))
-    
-    df_train['cool_week'] = df_train.apply(add_weather_var,
-                                           axis=1,
-                                           args=(df_weather, df_trap_loc, 'cool_dw',))
-    
-    df_train['precip_week'] = df_train.apply(add_weather_var,
-                                             axis=1,
-                                             args=(df_weather, df_trap_loc, 'precip_week',))
-    
-    df_train['3_week_avrgPrecipTotal'] = df_train.apply(add_weather_var,
-                                              axis=1,
-                                              args=(df_weather, df_trap_loc, '3_week_avrgPrecipTotal',))
-    
-    df_train['5_week_avrgPrecipTotal'] = df_train.apply(add_weather_var,
-                                                        axis=1,
-                                                        args=(df_weather, df_trap_loc, '5_week_avrgPrecipTotal',))
+    # For each row, determine which weather station is closer
 
-    df_train['3_week_avrgTavg'] = df_train.apply(add_weather_var,
-                                                 axis=1,
-                                                 args=(df_weather, df_trap_loc, '3_week_avrgTavg'))
-                                                 
-    
-    df_train['5_week_avrgTavg'] = df_train.apply(add_weather_var,
-                                                        axis=1,
-                                                        args=(df_weather, df_trap_loc, '5_week_avrgTavg'))
+    df['Station'] = df.apply(closer_ws, axis=1)
 
+    # Merge train/test data frame and weather data 
+    merged_df = pd.merge(df, df_weather, on=['Station', 'Date'])
 
-    return df_train
+    return merged_df
 
 
 if __name__ == '__main__':
 
     print("Starting")
     # read in training data
-    df_train = load_train()
-    df_train.to_csv("train_filled.csv", index=False)
+    df_train = load_data("train.csv")
+    df_train.to_csv("train_filled_new.csv", index=False)
 
     print("Reading Test")
-    # read in test data
-    df_test = load_test()
-    df_test.to_csv("test_filled.csv", index=False)
+    # # read in test data
+    df_test = load_data("test.csv")
+    df_test.to_csv("test_filled_new.csv", index=False)
 
     print("Finished")
     

@@ -8,16 +8,18 @@ from xgbwrapper import XgbWrapper
 do_cross_val = 2
 
 # Read in kaggle files
-train = pd.read_csv("train_filled.csv")
-test = pd.read_csv("test_filled.csv")
+train = pd.read_csv("train_filled_new.csv")
+test = pd.read_csv("test_filled_new.csv")
 submission = pd.read_csv("sampleSubmission.csv")
 
 
 train_for_loo = train.drop(['NumMosquitos',
-                          'AddressAccuracy',
-                          'AddressNumberAndStreet',
-                          'Address',
-                          'Street'], axis=1)
+                            'AddressAccuracy',
+                            'AddressNumberAndStreet',
+                            'Address',
+                            'Street',
+                            'CodeSum',
+                            ''], axis=1)
 
 X = train.drop(['Date',
                 'NumMosquitos',
@@ -25,6 +27,7 @@ X = train.drop(['Date',
                 'AddressNumberAndStreet',
                 'Address',
                 'Street',
+                'CodeSum',
                 'WnvPresent'], axis=1)
 
 X_real_test = test.drop(['Id',
