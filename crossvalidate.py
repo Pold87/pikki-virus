@@ -87,7 +87,10 @@ clf = GradientBoostingClassifier(n_estimators=1000,
                                  random_state=35,
                                  min_samples_leaf=6)
 
-clf = XgbWrapper({'objective': 'binary:logitraw'})
+clf = XgbWrapper({'objective': 'binary:logistic',
+                  'eval_metric': 'auc',
+                  'eta': 0.1,
+                  'max_delta_step': 1})
 
 
 # 'Normal' 70 / 30 cross-validation

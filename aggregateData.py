@@ -7,7 +7,7 @@ import datetime as dt
 def haversine(lat1,long1,lat2,long2):
 
     """
-    haversine distance (in km) between two coordinates in lat and long
+    Haversine distance (in km) between two coordinates in lat and long
     """
 
     earth_radius = 6371 #in kilometers
@@ -30,7 +30,7 @@ def haversine(lat1,long1,lat2,long2):
 def closer_ws(trap_location):
 
     """
-    for each trap location, calculate which weather station is closer and store in a dataframe df_trap_loc.
+    For each trap location, calculate which weather station is closer and store in a dataframe df_trap_loc.
     If difference between distances is smaller than 5km, assign 0. This will later indicate that
     the average of the measurements should be used.
     """
@@ -47,10 +47,12 @@ def closer_ws(trap_location):
     dist2 = haversine(lat_trap, lon_trap, lat_station2, lon_station2)
     
     # if difference between distances to weather stations is less than 5km, assign 0
-    if np.abs(dist1-dist2) < 5:
-        ws_id = 0
+    # if np.abs(dist1-dist2) < 5:
+    #     ws_id = 0
+
     # if distance to ws1 is smaller, ws1 is closer ws and vice versa
-    elif dist1 < dist2:
+    # elif dist1 < dist2:
+    if dist1 < dist2:
         ws_id = 1
     else: 
         ws_id = 2
@@ -242,33 +244,49 @@ def add_weather_var(row, df_weather, df_trap_loc, weather_var):
 
 def load_weather(path='weather.csv'):
 
+    """
+    Read in weather.csv and pre-process it
+    """
+
     df_weather = pd.read_csv(path)
 
+    # Handle missing values in df
     df_weather.Tavg = df_weather.Tavg.replace('M', np.nan, regex=True)
     df_weather.PrecipTotal = df_weather.PrecipTotal.replace('T', 0.005, regex=True)
     df_weather.PrecipTotal = df_weather.PrecipTotal.replace('M', np.nan, regex=True)
 
+    # Change type of column values
     df_weather.Tavg = df_weather.Tavg.astype(float)
     df_weather.PrecipTotal = df_weather.PrecipTotal.astype(float)
 
     df_weather.Date = df_weather.Date.map(str_to_date)
     df_weather['Year'] = df_weather.Date.apply(extract_year)
 
-    # Add weekly average
+    # Add weekly average of temperature and and precipitation
     df_weather = weekly_avrg(df_weather,'Tavg_week','Tavg')
     df_weather = weekly_avrg(df_weather,'precip_week','PrecipTotal')
     
-    #add new columns for Heat Degree Week and Cool Degree Week
+    # Add new columns for Heat Degree Week and Cool Degree Week
     df_weather['heat_dw'] = df_weather.Tavg_week.map(heat_degree_week)
     df_weather['cool_dw'] = df_weather.Tavg_week.map(cool_degree_week)
 
+    # Add moving 3 and 5 week moving window for precipitation
     df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 3, 'PrecipTotal')
     df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 5, 'PrecipTotal')
+
+    # Add moving 3 and 5 week moving window for temperature
+    df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 3, 'Tavg')
+    df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 5, 'Tavg')
+
 
     return df_weather
 
 
-def load_train(path='train.csv'):
+def load_data(path='train.csv'):
+
+    """
+    Read in train.csv or test.csv and preprocess the data frame
+    """
 
     # read in weather data
     df_weather = load_weather()
@@ -298,41 +316,17 @@ def load_train(path='train.csv'):
                                                         axis=1,
                                                         args=(df_weather, df_trap_loc, '5_week_avrgPrecipTotal',))
 
+    df_train['3_week_avrgTavg'] = df_train.apply(add_weather_var,
+                                                 axis=1,
+                                                 args=(df_weather, df_trap_loc, '3_week_avrgTavg'))
+                                                 
+    
+    df_train['5_week_avrgTavg'] = df_train.apply(add_weather_var,
+                                                        axis=1,
+                                                        args=(df_weather, df_trap_loc, '5_week_avrgTavg'))
+
+
     return df_train
-
-
-def load_test(path='test.csv'):
-
-    # read in weather data
-    df_weather = load_weather()
-
-    df_test = pd.read_csv(path)
-    df_test.Date = df_test.Date.map(str_to_date)
-
-    df_trap_loc = create_trap_df(df_test)
-                                                                                                          
-    df_test['heat_week'] = df_test.apply(add_weather_var,                                               
-                                           axis=1,                                                        
-                                           args=(df_weather, df_trap_loc, 'heat_dw',))                    
-                                                                                                          
-    df_test['cool_week'] = df_test.apply(add_weather_var,                                               
-                                           axis=1,                                                        
-                                           args=(df_weather, df_trap_loc, 'cool_dw',))                    
-    
-    df_test['precip_week'] = df_test.apply(add_weather_var,                                             
-                                           axis=1,                                                      
-                                           args=(df_weather, df_trap_loc, 'precip_week',))              
-    
-    df_test['3_week_avrgPrecipTotal'] = df_test.apply(add_weather_var,                                          
-                                            axis=1,                                                     
-                                            args=(df_weather, df_trap_loc, '3_week_avrgPrecipTotal',))
-                                                                                                          
-    df_test['5_week_avrgPrecipTotal'] = df_test.apply(add_weather_var,                                          
-                                            axis=1,                                                     
-                                            args=(df_weather, df_trap_loc, '5_week_avrgPrecipTotal',))
-
-
-    return df_test
 
 
 if __name__ == '__main__':
