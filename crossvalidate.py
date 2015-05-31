@@ -5,7 +5,17 @@ from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier
 from sklearn import cross_validation, preprocessing, metrics
 from xgbwrapper import XgbWrapper
 
-do_cross_val = 2
+from lasagne.layers import InputLayer, DropoutLayer, DenseLayer
+from lasagne.updates import nesterov_momentum
+from lasagne.objectives import binary_crossentropy
+from nolearn.lasagne import NeuralNet
+import theano
+from theano import tensor as T
+from theano.tensor.nnet import sigmoid
+from sklearn.utils import shuffle
+
+
+do_cross_val = 3
 
 # Read in kaggle files
 train = pd.read_csv("train_filled_new.csv")
@@ -13,14 +23,16 @@ test = pd.read_csv("test_filled_new.csv")
 submission = pd.read_csv("sampleSubmission.csv")
 
 
+# Create df for leave-one-year-out cross-validation
 train_for_loo = train.drop(['NumMosquitos',
                             'AddressAccuracy',
                             'AddressNumberAndStreet',
                             'Address',
                             'Street',
-                            'CodeSum',
-                            ''], axis=1)
+                            'CodeSum'
+], axis=1)
 
+# Create df for training on the full training set
 X = train.drop(['Date',
                 'NumMosquitos',
                 'AddressAccuracy',
@@ -30,11 +42,14 @@ X = train.drop(['Date',
                 'CodeSum',
                 'WnvPresent'], axis=1)
 
+
+# Create df for testing and predicting
 X_real_test = test.drop(['Id',
                          'Date',
                          'Address',
                          'Street',
                          'AddressAccuracy',
+                         'CodeSum',
                          'AddressNumberAndStreet'], axis=1)
 
 species_encoder = preprocessing.LabelEncoder()
@@ -51,10 +66,6 @@ X_real_test.Species = species_encoder.fit_transform(X_real_test.Species)
 X_real_test.Trap = species_encoder.fit_transform(X_real_test.Trap)
 
 
-def get_year(dt):
-    return int(str.split(dt, '-')[0])
-
-
 def year_train_test_split(train, target, year):
 
     # Create copy
@@ -64,14 +75,11 @@ def year_train_test_split(train, target, year):
     y = X[target]
     X.drop([target], axis=1)
 
-    # Create year column
-    X['year'] = X.Date.apply(get_year)
-
     # Create mask
-    msk = X.year == year
+    msk = X.Year == year
 
     # Drop date column
-    X = X.drop(['year', 'Date', 'WnvPresent'], axis=1)
+    X = X.drop(['Year', 'Date', 'WnvPresent'], axis=1)
     
 
     # Create dfs based on mask    
@@ -85,15 +93,33 @@ def year_train_test_split(train, target, year):
 
 # Cross validation
 
-# Create classifier
-clf = GradientBoostingClassifier(n_estimators=1000,
-                                 random_state=35,
-                                 min_samples_leaf=6)
 
-clf = XgbWrapper({'objective': 'binary:logistic',
-                  'eval_metric': 'auc',
-                  'eta': 0.1,
-                  'max_delta_step': 1})
+class AdjustVariable(object):
+    def __init__(self, variable, target, half_life=20):
+        self.variable = variable
+        self.target = target
+        self.half_life = half_life
+    def __call__(self, nn, train_history):
+        delta = self.variable.get_value() - self.target
+        delta /= 2**(1.0/self.half_life)
+        self.variable.set_value(np.float32(self.target + delta))    
+
+        
+    
+# Create classifier
+#clf = GradientBoostingClassifier(n_estimators=1000,
+#                                 random_state=35,
+#                                 min_samples_leaf=6)
+
+clf = RandomForestClassifier(n_estimators=1000,
+                             min_samples_leaf=6)
+
+
+#clf = XgbWrapper({'objective': 'binary:logistic',
+#                  'eval_metric': 'auc',
+#                  'eta': 0.1,
+#                  'silent': 0,
+#                  'max_delta_step': 1})
 
 
 # 'Normal' 70 / 30 cross-validation
@@ -106,7 +132,7 @@ if do_cross_val == 1:
 
     clf.fit(X_train, y_train)
 
-    y_pred = clf.predict_proba(X_test)#[:, 1]
+    y_pred = clf.predict_proba(X_test)[:, 1]
     print(metrics.roc_auc_score(y_test, y_pred))
 
 elif do_cross_val == 2:
@@ -118,20 +144,19 @@ elif do_cross_val == 2:
         X_train, X_test, y_train, y_test = year_train_test_split(
             train_for_loo,
             'WnvPresent',
-            year)
-        
+            year)      
         
         clf.fit(X_train, y_train)
 
-        y_pred = clf.predict_proba(X_test)
+        y_pred = clf.predict_proba(X_test) [:, 1]
         score = metrics.roc_auc_score(y_test, y_pred)
         scores.append(score)
     print(scores)
-
+    
 else:
     clf.fit(X, train.WnvPresent)
 
     # Make submission
     y = clf.predict_proba(X_real_test)[:, 1]
     submission.WnvPresent = y
-    submission.to_csv("ourSub.csv", index=False)
+    submission.to_csv("ourSub_mvgAvgs.csv", index=False)

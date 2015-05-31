@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from math import sin, cos, sqrt, atan2, radians
 import datetime as dt
+from sklearn import preprocessing
 
 
 def haversine(lat1,long1,lat2,long2):
@@ -145,14 +146,6 @@ def str_to_date(str):
     return dt.datetime.strptime(str, '%Y-%m-%d').date()
 
 
-def extract_year(date):
-
-    """
-    add additional column "year" to weather dataframe in order to group the data by year
-    """
-    
-    return date.year        
-
 def weekly_avrg(df, new_col_name, var_col_name):
 
     """
@@ -251,16 +244,48 @@ def load_weather(path='weather.csv'):
     df_weather = pd.read_csv(path)
 
     # Handle missing values in df
-    df_weather.Tavg = df_weather.Tavg.replace('M', np.nan, regex=True)
-    df_weather.PrecipTotal = df_weather.PrecipTotal.replace('T', 0.005, regex=True)
-    df_weather.PrecipTotal = df_weather.PrecipTotal.replace('M', np.nan, regex=True)
+    df_weather = df_weather.replace('T$', 0.005, regex=True)
+    df_weather = df_weather.replace('M$', np.nan, regex=True)
+    df_weather = df_weather.replace('-$', np.nan, regex=True)
 
+    # Drop Water1 column (is always NaN)
+    df_weather = df_weather.drop(['Water1'], axis=1)
+    
+    # Impute missing values with mean
+
+    # Depart is only available from one weather station !
+    imp_depart = preprocessing.Imputer(axis=1, strategy='mean')
+    depart = imp_depart.fit_transform(df_weather.Depart)
+    df_weather.Depart = imp_depart.fit_transform(df_weather.Depart)[0]
+    
+    imp_wetbulb = preprocessing.Imputer(axis=1, strategy='mean')
+    df_weather.WetBulb = imp_wetbulb.fit_transform(df_weather.WetBulb)[0]
+
+    imp_sunrise = preprocessing.Imputer(axis=1, strategy='mean')
+    df_weather.Sunrise = imp_sunrise.fit_transform(df_weather.Sunrise)[0]
+    
+    imp_sunset = preprocessing.Imputer(axis=1, strategy='mean')
+    df_weather.Sunset = imp_sunset.fit_transform(df_weather.Sunset)[0]
+    
+    imp_depth = preprocessing.Imputer(axis=1, strategy='mean')
+    df_weather.Depth = imp_depth.fit_transform(df_weather.Depth)[0]
+
+    imp_snowfall = preprocessing.Imputer(axis=1, strategy='mean')
+    df_weather.SnowFall = imp_snowfall.fit_transform(df_weather.SnowFall)[0]
+    
+    imp_preciptotal = preprocessing.Imputer(axis=1, strategy='mean')
+    df_weather.PrecipTotal = imp_preciptotal.fit_transform(df_weather.PrecipTotal)[0]
+    
+    imp_stnpressure = preprocessing.Imputer(axis=1, strategy='mean')
+    df_weather.StnPressure = imp_stnpressure.fit_transform(df_weather.StnPressure)[0]
+    
     # Change type of column values
     df_weather.Tavg = df_weather.Tavg.astype(float)
     df_weather.PrecipTotal = df_weather.PrecipTotal.astype(float)
 
     df_weather.Date = df_weather.Date.map(str_to_date)
-    df_weather['Year'] = df_weather.Date.apply(extract_year)
+    df_weather['Year'] = df_weather.Date.apply(lambda x: x.year)
+    df_weather['Month'] = df_weather.Date.apply(lambda x: x.month)
 
     # Add weekly average of temperature and and precipitation
     df_weather = weekly_avrg(df_weather,'Tavg_week','Tavg')
@@ -270,15 +295,20 @@ def load_weather(path='weather.csv'):
     df_weather['heat_dw'] = df_weather.Tavg_week.map(heat_degree_week)
     df_weather['cool_dw'] = df_weather.Tavg_week.map(cool_degree_week)
 
-    # Add moving 3 and 5 week moving window for precipitation
-    df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 3, 'PrecipTotal')
-    df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 5, 'PrecipTotal')
-
-    # Add moving 3 and 5 week moving window for temperature
-    df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 3, 'Tavg')
-    df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, 5, 'Tavg')
+    # TODO!
+    #df_weather['heat_dw_shifted2'] = df_weather.heat_dw
+    #df_weather['cool_dw_shifted2'] = df_weather.cool_dw
 
 
+    # Add moving windows
+    for weeks in range(1, 24):
+
+        # Add moving window for precipitation
+        df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, weeks, 'PrecipTotal')
+
+        # Add moving moving window for temperature
+        df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, weeks, 'Tavg')
+    
     return df_weather
 
 
@@ -316,6 +346,9 @@ if __name__ == '__main__':
     df_test = load_data("test.csv")
     df_test.to_csv("test_filled_new.csv", index=False)
 
+    #df_weather = load_weather()
+    # df_weather.to_csv("weather_additional_info.csv", index=False)
+    
     print("Finished")
     
     # Create distance matrices
@@ -326,18 +359,6 @@ if __name__ == '__main__':
     #closest_ten_traps_train = trap_distance_matrix_train.apply(find_closest_per_trap, axis=0, args = (10,))
     #closest_ten_traps_test = trap_distance_matrix_test.apply(find_closest_per_trap, axis=0, args = (10,))
 
-
-
-
+            
 
     
-
-
-
-
-        
-        
-        
-        
-
-            
