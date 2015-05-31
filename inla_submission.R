@@ -19,13 +19,13 @@ df <- rbind(X_train, X_test)
 if (use.inla) {
 
 model <- inla(WnvPresent ~ Species
-              + Block)
+              + Block
               #+ Trap
-              + Latitude)
+              + Latitude
               + Longitude
 
               + X9_week_avrgPrecipTotal
-              + X9_week_avrgTavg)
+              + X9_week_avrgTavg
               
               + X7_week_avrgPrecipTotal
               + X7_week_avrgTavg
