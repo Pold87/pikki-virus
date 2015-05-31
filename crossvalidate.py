@@ -13,9 +13,12 @@ import theano
 from theano import tensor as T
 from theano.tensor.nnet import sigmoid
 from sklearn.utils import shuffle
+from sklearn import linear_model
+
+from sklearn.linear_model import LogisticRegression
 
 
-do_cross_val = 3
+do_cross_val = 2
 
 # Read in kaggle files
 train = pd.read_csv("train_filled_new.csv")
@@ -114,6 +117,13 @@ class AdjustVariable(object):
 clf = RandomForestClassifier(n_estimators=1000,
                              min_samples_leaf=6)
 
+clf = LogisticRegression()
+clf = linear_model.BayesianRidge(n_iter=5000,
+                                 normalize=True)
+
+#clf = linear_model.ARDRegression(n_iter=500,
+#                                 normalize=True)
+
 
 #clf = XgbWrapper({'objective': 'binary:logistic',
 #                  'eval_metric': 'auc',
@@ -145,13 +155,43 @@ elif do_cross_val == 2:
             train_for_loo,
             'WnvPresent',
             year)      
+
+        X_train.to_csv("data_per_year/" + str(year) + "X_train.csv", index=False)
+        X_test.to_csv("data_per_year/" + str(year) + "X_test.csv", index=False)
+        y_train.to_csv("data_per_year/" + str(year) + "y_train.csv", index=False)
+        y_test.to_csv("data_per_year/" + str(year) + "y_test.csv", index=False)
+
+        
+        clf.fit(X_train, y_train)
+
+#        y_pred = clf.predict_proba(X_test) [:, 1]
+        y_pred = clf.predict(X_test)
+        score = metrics.roc_auc_score(y_test, y_pred)
+        scores.append(score)
+    print(scores)
+    print(np.array(scores).mean())
+
+elif do_cross_val == 3:
+
+    # TODO:
+    # Implement lasagne
+    
+    # Leave-one-year-out cross-validation
+    scores = []
+    for year in [2007, 2009, 2011, 2013]:
+
+        X_train, X_test, y_train, y_test = year_train_test_split(
+            train_for_loo,
+            'WnvPresent',
+            year)      
+
         
         clf.fit(X_train, y_train)
 
         y_pred = clf.predict_proba(X_test) [:, 1]
         score = metrics.roc_auc_score(y_test, y_pred)
         scores.append(score)
-    print(scores)
+    print(scores)    
     
 else:
     clf.fit(X, train.WnvPresent)
