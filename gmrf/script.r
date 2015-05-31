@@ -10,9 +10,9 @@ weather.station.2.lon <-  -87.752
 weather.station.2.elev <- 612
 
 print("Reading data ...")
-weather <- read.csv("weather.csv", header = T)
-weather.data <- weather[c(TRUE, FALSE), ]
-weather.data <- data.frame(Date=weather.data$Date, Heat=weather.data$Heat, Cool=weather.data$Cool)
+# weather <- read.csv("weather.csv", header = T)
+# weather.data <- weather[c(TRUE, FALSE), ]
+# weather.data <- data.frame(Date=weather.data$Date, Heat=weather.data$Heat, Cool=weather.data$Cool)
 
 # Heat Cool
 
@@ -26,13 +26,13 @@ test <- read.csv("test.csv", header = T)
 test.data <- data.frame(Date=test$Date, Species=test$Species, Trap=test$Trap)
 
 # weather.data = head(weather.data, 100)
-# train.data = head(train.data, 100)
-# test.data = head(test.data, 100)
+train.data = head(train.data, 100)
+test.data = head(test.data, 100)
 
 print("Merging data ...")
-# n.seas = 12
 
-weather.data$Date <- as.numeric(as.POSIXct(as.Date(weather.data$Date, "%Y-%m-%d")))	# capital Y is important
+
+# weather.data$Date <- as.numeric(as.POSIXct(as.Date(weather.data$Date, "%Y-%m-%d")))	# capital Y is important
 train.data$Date <- as.numeric(as.POSIXct(as.Date(train.data$Date, "%Y-%m-%d")))	# capital Y is important
 test.data$Date <- as.numeric(as.POSIXct(as.Date(test.data$Date, "%Y-%m-%d")))	# capital Y is important
 test.data$WnvPresent <- NA
@@ -40,20 +40,31 @@ test.data$WnvPresent <- NA
 # train.data$Id <- (1:nrow(train.data)) + nrow(test.data)
 
 joined.data <- rbind(train.data, test.data)
-merged.data <- merge(joined.data, weather.data)
+merged.data <- joined.data
+# merged.data$Trap <- as.numeric(substr(merged.data$Trap, 2, 4))# + (substr(merged.data$Trap, 5, 5) != "") * 300
+# traps.id <- as.numeric(substr(unique(graph.data$Trap), 2, 4))
+# merged.data$Trap <- match(merged.data$Trap, traps.id)
 
-# seasonal <- rep(1:n.seas, ceiling(n/n.seas))[1:n]
-# data$Season <- seasonal #
-# data$seasonal <- (data$Date) %% n.seas + 1
+# merged.data <- merge(joined.data, weather.data)
 
-print("Fitting model ...")
+n = nrow(merged.data)
+# seasonal <- rep(1:n.seas, ceiling(n / n.seas))[1:n]
+# merged.data$Season <- seasonal #
+len.cycle = 31557600
+merged.data$DateInYear <- ((merged.data$Date) %% len.cycle + 1)
+# merged.data$Season[1:(n.seas-1)] <- 1:(n.seas-1)
+
+# formula <- WnvPresent ~ f(Date) + f(Species) + f(Trap)
 # formula <- WnvPresent ~ f(Season, model = "seasonal", season.length = n.seas)# + f(Species) + f(Trap)
-formula <- WnvPresent ~ f(Date) + f(Species) + f(Trap) + f(Heat) + f(Cool)
+# formula <- WnvPresent ~ f(Date) + f(Species) + f(Trap, model = "besag", graph = "traps.graph")
+# formula <- WnvPresent ~ f(Date) + f(Species) + f(Trap) + f(Tavg_week) + f(precip_week) + f(heat_dw) + f(cool_dw)
+formula <- WnvPresent ~ f(Species) + f(Date) + f(DateInYear, model = "rw2", cyclic = TRUE) + f(Trap, model = "besag", graph = "traps.graph")
+# print("Fitting model ...")
+# # formula <- WnvPresent ~ f(Season, model = "seasonal", season.length = n.seas)# + f(Species) + f(Trap)
 mod <- inla(formula, data = merged.data, control.predictor = list(link = 1), verbose = TRUE)
 
-# print(mod$summary.fitted.values$mean)
-# 31557600000
-
+# # print(mod$summary.fitted.values$mean)
+# # 31557600
 
 options(scipen = 500) # make sure no scientific numbers are written
 WnvPresent <- mod$summary.fitted.values$mean[(nrow(train.data) + 1):nrow(merged.data)]
@@ -62,4 +73,4 @@ backup <- WnvPresent
 WnvPresent <- pmax(0, WnvPresent)
 write.csv(cbind(Id, WnvPresent), file = "result.csv", row.names  = FALSE)
 
-# Date,Address,Species,Block,Street,Trap,AddressNumberAndStreet,Latitude,Longitude,AddressAccuracy,NumMosquitos,WnvPresent
+# # Date,Address,Species,Block,Street,Trap,AddressNumberAndStreet,Latitude,Longitude,AddressAccuracy,NumMosquitos,WnvPresent
