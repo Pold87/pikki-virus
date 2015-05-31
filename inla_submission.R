@@ -18,27 +18,27 @@ df <- rbind(X_train, X_test)
 
 if (use.inla) {
 
-model <- inla(WnvPresent ~ Species
-              + Block)
-              #+ Trap
-              + Latitude)
-              + Longitude
+    model <- inla(WnvPresent ~ Species
+                  + Block
+                                        #+ Trap
+                  + Latitude
+                  + Longitude
 
-              + X9_week_avrgPrecipTotal
-              + X9_week_avrgTavg)
-              
-              + X7_week_avrgPrecipTotal
-              + X7_week_avrgTavg
-              
-              + Latitude * Longitude
+                  + X9_week_avrgPrecipTotal
+                  + X9_week_avrgTavg
+    
+                  + X7_week_avrgPrecipTotal
+                  + X7_week_avrgTavg
+                  
+                  + Latitude * Longitude, 
  
               
-              #+ Month * Species
-              
-            , data=df,
-              control.predictor = list(link = 1))
+                                        #+ Month * Species
+                  
+                  data=df,
+                  control.predictor = list(link = 1))
 
-ypred <- model$summary.fitted.values$mean[(length(X_train$Trap) + 1) : (length(X_train$Trap) + length(X_test$Trap))]
+    ypred <- model$summary.fitted.values$mean[(length(X_train$Trap) + 1) : (length(X_train$Trap) + length(X_test$Trap))]
 } else {
     
     model <- glm(WnvPresent ~ Species

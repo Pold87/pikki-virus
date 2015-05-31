@@ -67,7 +67,7 @@ for (year in c('2007', '2009', '2011', '2013')){
                   + Month * Species
                   
                 , data=df_train)
-    ypred <- predict(model, X_test)        
+    ypred <- predict(model, X_test)   
         }
 
     # Calculate AUC score
