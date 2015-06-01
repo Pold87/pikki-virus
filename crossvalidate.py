@@ -18,7 +18,7 @@ from sklearn import linear_model
 from sklearn.linear_model import LogisticRegression
 
 
-do_cross_val = 2
+do_cross_val = 3
 
 # Read in kaggle files
 train = pd.read_csv("train_filled_new.csv")
@@ -175,6 +175,7 @@ elif do_cross_val == 3:
 
     # TODO:
     # Implement lasagne
+
     
     # Leave-one-year-out cross-validation
     scores = []
@@ -183,14 +184,75 @@ elif do_cross_val == 3:
         X_train, X_test, y_train, y_test = year_train_test_split(
             train_for_loo,
             'WnvPresent',
-            year)      
+            year)
 
+        print(X_test.head())
         
-        clf.fit(X_train, y_train)
+        X_train = np.asarray(X_train, dtype=np.float32)
+        X_test = np.asarray(X_test, dtype=np.float32)
 
-        y_pred = clf.predict_proba(X_test) [:, 1]
-        score = metrics.roc_auc_score(y_test, y_pred)
-        scores.append(score)
+        y_train = np.asarray(y_train, dtype=np.int32).reshape(-1,1)
+        y_test = np.asarray(y_test, dtype=np.int32).reshape(-1,1)
+
+        input_size = len(X_train[0])
+
+        learning_rate = theano.shared(np.float32(0.1))
+
+        clf = NeuralNet(
+            layers=[  
+                ('input', InputLayer),
+                ('hidden1', DenseLayer),
+                ('dropout1', DropoutLayer),
+                ('hidden2', DenseLayer),
+                ('dropout2', DropoutLayer),
+                ('output', DenseLayer),
+            ],
+            # layer parameters:
+            input_shape=(None, input_size), 
+            hidden1_num_units=256, 
+            dropout1_p=0.4,
+            hidden2_num_units=256, 
+            dropout2_p=0.4,
+            output_nonlinearity=sigmoid, 
+            output_num_units=1, 
+            
+            # optimization method:
+            update=nesterov_momentum,
+            update_learning_rate=learning_rate,
+            update_momentum=0.9,
+            
+            # Decay the learning rate
+            on_epoch_finished=[
+                AdjustVariable(learning_rate, target=0, half_life=4),
+            ],
+            
+            # This is silly, but we don't want a stratified K-Fold here
+            # To compensate we need to pass in the y_tensor_type and the loss.
+            regression=True,
+            y_tensor_type = T.imatrix,
+            objective_loss_function = binary_crossentropy,
+            
+            max_epochs=1, 
+            eval_size=0.2,
+            verbose=1,
+        )
+
+        X, y = shuffle(X_train, y_train, random_state=123)
+        
+        clf.fit(X, y)
+
+
+        _, X_valid, _, y_valid = clf.train_test_split(X, y, clf.eval_size)
+        probas = clf.predict_proba(X_valid)[:,0]
+        print("ROC score", metrics.roc_auc_score(y_valid, probas))
+        
+
+        #y_pred = clf.predict_proba(X_test)[:, 0]
+
+        #print(y_pred)
+        
+        #score = metrics.roc_auc_score(y_test, y_pred)
+        #scores.append(score)
     print(scores)    
     
 else:
