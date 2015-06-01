@@ -5,3 +5,6 @@ train_filled.csv
 aggregated_test_NumMosquito.csv
 aggregated_test_NumMosquito_no_strings.csv
 aggregated_train_with_nummosquitos.csv
+*~
+*.pyc
+.*
