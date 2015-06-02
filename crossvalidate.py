@@ -205,8 +205,8 @@ elif do_cross_val == 3:
                 ('dropout1', DropoutLayer),
                 ('hidden2', DenseLayer),
                 ('dropout2', DropoutLayer),
-		('hidden3', DenseLayer),
-		('dropout3', DropoutLayer),
+		('hidden3',DenseLayer),
+		('dropout3', DemseLayer),
                 ('output', DenseLayer),
             ],
             # layer parameters:
@@ -215,8 +215,8 @@ elif do_cross_val == 3:
             dropout1_p=0.5,
             hidden2_num_units=150, 
             dropout2_p=0.4,
-            hidden3_num_unts= 100,
-            dropout3_p = .1,
+	    hidden3_num_units = 100,
+	    dropout3_p = 0.1,
             output_nonlinearity=sigmoid, 
             output_num_units=1, 
             

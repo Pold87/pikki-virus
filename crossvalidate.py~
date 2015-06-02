@@ -3,31 +3,34 @@ import numpy as np
 from sklearn.ensemble.forest import RandomForestClassifier
 from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier
 from sklearn import cross_validation, preprocessing, metrics
-from xgbwrapper import XgbWrapper
+#from xgbwrapper import XgbWrapper
 
-from lasagne.layers import InputLayer, DropoutLayer, DenseLayer
-from lasagne.updates import nesterov_momentum
-from lasagne.objectives import binary_crossentropy
-from nolearn.lasagne import NeuralNet
-import theano
-from theano import tensor as T
-from theano.tensor.nnet import sigmoid
+#from lasagne.layers import InputLayer, DropoutLayer, DenseLayer
+#from lasagne.updates import nesterov_momentum
+#from lasagne.objectives import binary_crossentropy
+#from nolearn.lasagne import NeuralNet
+#import theano
+#from theano import tensor as T
+#from theano.tensor.nnet import sigmoid
 from sklearn.utils import shuffle
 from sklearn import linear_model
 
 from sklearn.linear_model import LogisticRegression
 
 
-do_cross_val = 3
+do_cross_val = 2
 
 # Read in kaggle files
 train = pd.read_csv("train_filled_new.csv")
 test = pd.read_csv("test_filled_new.csv")
+train = pd.read_csv("Data_with_NumMosquitos/aggregated_train_with_nummosquitos.csv")
+test = pd.read_csv("Data_with_NumMosquitos/aggregated_test_NumMosquito_no_strings.csv")
 submission = pd.read_csv("sampleSubmission.csv")
 
 
 # Create df for leave-one-year-out cross-validation
-train_for_loo = train.drop(['NumMosquitos',
+train_for_loo = train.drop([
+		           # 'NumMosquitos',
                             'AddressAccuracy',
                             'AddressNumberAndStreet',
                             'Address',
@@ -37,7 +40,7 @@ train_for_loo = train.drop(['NumMosquitos',
 
 # Create df for training on the full training set
 X = train.drop(['Date',
-                'NumMosquitos',
+              #  'NumMosquitos',
                 'AddressAccuracy',
                 'AddressNumberAndStreet',
                 'Address',
@@ -115,7 +118,7 @@ class AdjustVariable(object):
 #                                 min_samples_leaf=6)
 
 clf = RandomForestClassifier(n_estimators=1000,
-                             min_samples_leaf=6)
+                             min_samples_leaf=6,n_jobs=-1)
 
 clf = LogisticRegression()
 clf = linear_model.BayesianRidge(n_iter=5000,
