@@ -11,6 +11,15 @@ locations = traps[['Longitude', 'Latitude']].values
 
 points = locations
 
+### make delaunay diagram
+tri = Delaunay(points)
+find_neighbours = lambda x,triang: list(set(indx for simplex in triang.simplices if x in simplex for indx in simplex if indx !=x))
+
+for pidx in range(points.size//2):
+	neighbours = find_neighbours(pidx, tri)
+	if neighbours != []:
+		print("%d : %s\n" % (pidx, ' '.join([str(neighbour) for neighbour in neighbours])))
+
 ### plot map
 mapdata = np.loadtxt("../mapdata_copyright_openstreetmap_contributors.txt")
 aspect = mapdata.shape[0] * 1.0 / mapdata.shape[1]
@@ -23,14 +32,10 @@ plt.imshow(mapdata,
            extent=lon_lat_box,
            aspect=aspect)
 
-### make delaunay diagram
-tri = Delaunay(points)
-
 ### plot delaunay vertices which have end point
 plt.triplot(points[:,0], points[:,1], tri.simplices.copy(), 'k-')
 
 ### plot traps
-locations = traps[['Longitude', 'Latitude']].values
 plt.scatter(locations[:,0], locations[:,1], marker='x')
 
 ### mark points

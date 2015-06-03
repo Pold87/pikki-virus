@@ -8,27 +8,10 @@ import itertools
 traps = pd.read_csv('../train.csv')[['Longitude', 'Latitude', 'Species', 'NumMosquitos']]
 locations = traps[['Longitude', 'Latitude']].values
 
-# points=[[0.0, 0.0], [0.0, 1.0], [0.2, 0.5], [0.3, 0.6], [0.4, 0.5], [0.6, 0.3], [0.6, 0.5], [1.0, 0.0], [1.0, 1.0]]
 points = locations
-tri = Delaunay(points)
-neiList=defaultdict(set)
-for p in tri.vertices:
-    for i,j in itertools.combinations(p,2):
-        neiList[i].add(j)
-        neiList[j].add(i)
 
-# for key in sorted(neiList.iterkeys()):
-#     print("%d:%s" % (key,','.join([str(i) for i in neiList[key]])))
-
-# 0:1,2,5,7
-# 1:0,8,2,3
-# 2:0,1,3,4,5
-# 3:8,1,2,4,6
-# 4:2,3,5,6
-# 5:0,2,4,6,7
-# 6:8,3,4,5,7
-# 7:8,0,5,6
-# 8:1,3,6,7
+### make voronoi diagram
+vor = Voronoi(points)
 
 ### Visualize voronoi on map
 from scipy.spatial import Voronoi, voronoi_plot_2d
@@ -45,9 +28,6 @@ plt.imshow(mapdata,
            cmap=plt.get_cmap('gray'),
            extent=lon_lat_box,
            aspect=aspect)
-
-### make voronoi diagram
-vor = Voronoi(points)
 
 ### plot voronoi vertices which have end point
 for simplex in vor.ridge_vertices:
