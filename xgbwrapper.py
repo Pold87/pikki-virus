@@ -1,5 +1,6 @@
 import xgboost as xgb
 from sklearn.base import ClassifierMixin
+import numpy as np
 
 class XgbWrapper (ClassifierMixin):
     """

@@ -1,9 +1,14 @@
 import pandas as pd
 import numpy as np
+import sklearn
 from sklearn.ensemble.forest import RandomForestClassifier
 from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier
 from sklearn import cross_validation, preprocessing, metrics
-from xgbwrapper import XgbWrapper
+from sklearn import neighbors
+import xgbwrapper
+import random
+
+import statsmodels.api as sm
 
 from lasagne.layers import InputLayer, DropoutLayer, DenseLayer
 from lasagne.updates import nesterov_momentum
@@ -14,11 +19,12 @@ from theano import tensor as T
 from theano.tensor.nnet import sigmoid
 from sklearn.utils import shuffle
 from sklearn import linear_model
-
+from sklearn import gaussian_process
 from sklearn.linear_model import LogisticRegression
 
+reload(xgbwrapper)
 
-do_cross_val = 3
+do_cross_val = 2
 
 # Read in kaggle files
 train = pd.read_csv("train_filled_new.csv")
@@ -28,6 +34,7 @@ submission = pd.read_csv("sampleSubmission.csv")
 
 # Create df for leave-one-year-out cross-validation
 train_for_loo = train.drop(['NumMosquitos',
+                            'Trap',
                             'AddressAccuracy',
                             'AddressNumberAndStreet',
                             'Address',
@@ -37,6 +44,7 @@ train_for_loo = train.drop(['NumMosquitos',
 
 # Create df for training on the full training set
 X = train.drop(['Date',
+                'Trap',
                 'NumMosquitos',
                 'AddressAccuracy',
                 'AddressNumberAndStreet',
@@ -49,6 +57,7 @@ X = train.drop(['Date',
 # Create df for testing and predicting
 X_real_test = test.drop(['Id',
                          'Date',
+                         'Trap',
                          'Address',
                          'Street',
                          'AddressAccuracy',
@@ -59,14 +68,21 @@ species_encoder = preprocessing.LabelEncoder()
 trap_encoder = preprocessing.LabelEncoder()
 
 X.Species = species_encoder.fit_transform(X.Species)
-X.Trap = trap_encoder.fit_transform(X.Trap)
+# X.Trap = trap_encoder.fit_transform(X.Trap)
 
-train_for_loo.Species = species_encoder.fit_transform(train_for_loo.Species)
-train_for_loo.Trap = trap_encoder.fit_transform(train_for_loo.Trap)
+train_for_loo.Species = species_encoder.transform(train_for_loo.Species)
+# train_for_loo.Trap = trap_encoder.fit_transform(train_for_loo.Trap)
+
+# Handle UNSPECIFIED CULEX
+
+all_species = train.Species.unique()
+
+unspecified_mask = X_real_test.Species == "UNSPECIFIED CULEX"
+X_real_test.ix[unspecified_mask, "Species"] = np.random.choice(all_species, len(unspecified_mask))
+X_real_test.Species = species_encoder.transform(X_real_test.Species)
 
 
-X_real_test.Species = species_encoder.fit_transform(X_real_test.Species)
-X_real_test.Trap = species_encoder.fit_transform(X_real_test.Trap)
+# X_real_test.Trap = trap_encoder.transform(X_real_test.Trap)
 
 
 def year_train_test_split(train, target, year):
@@ -110,26 +126,31 @@ class AdjustVariable(object):
         
     
 # Create classifier
-#clf = GradientBoostingClassifier(n_estimators=1000,
+#clf = GradientBoostingClassifier(n_estimators=100,
 #                                 random_state=35,
 #                                 min_samples_leaf=6)
+#
+#clf = RandomForestClassifier(n_estimators=2000,
+#                             min_samples_leaf=4)
 
-clf = RandomForestClassifier(n_estimators=1000,
-                             min_samples_leaf=6)
+#clf = neighbors.KNeighborsClassifier(50,
+#                                     p=3)
 
-clf = LogisticRegression()
-clf = linear_model.BayesianRidge(n_iter=5000,
-                                 normalize=True)
+clf = neighbors.KernelDensity()
+
+# clf = LogisticRegression()
+# clf = linear_model.Ridge(alpha=0.1)
+#clf = linear_model.BayesianRidge(n_iter=5000,
+#                                 normalize=True)
 
 #clf = linear_model.ARDRegression(n_iter=500,
 #                                 normalize=True)
 
-
-#clf = XgbWrapper({'objective': 'binary:logistic',
-#                  'eval_metric': 'auc',
-#                  'eta': 0.1,
-#                  'silent': 0,
-#                  'max_delta_step': 1})
+ #clf = xgbwrapper.XgbWrapper({'objective': 'binary:logistic',
+ #                 'eval_metric': 'auc',
+ #                 'eta': 0.1,
+ #                 'silent': 0,
+ #                 'max_delta_step': 1})
 
 
 # 'Normal' 70 / 30 cross-validation
@@ -149,6 +170,9 @@ elif do_cross_val == 2:
 
     # Leave-one-year-out cross-validation
     scores = []
+    total_pred = np.array([])
+    total_test = np.array([])
+    
     for year in [2007, 2009, 2011, 2013]:
 
         X_train, X_test, y_train, y_test = year_train_test_split(
@@ -164,10 +188,34 @@ elif do_cross_val == 2:
         
         clf.fit(X_train, y_train)
 
-#        y_pred = clf.predict_proba(X_test) [:, 1]
-        y_pred = clf.predict(X_test)
+        y_pred = clf.predict_proba(X_test) [:, 1]
+        print(y_pred)
+              
+        #        y_pred = clf.predict_proba(X_test) # For xgbwrapper best score: 57.2
+        #         y_pred = clf.predict_proba(X_test)
+        # y_pred = clf.predict(X_test)
+
+
+
+        non_carriers_mask = (X_test.Species == species_encoder.transform('CULEX SALINARIUS')) |\
+                            (X_test.Species == species_encoder.transform('CULEX ERRATICUS')) |\
+                            (X_test.Species == species_encoder.transform('CULEX TARSALIS')) |\
+                            (X_test.Species == species_encoder.transform('CULEX TERRITANS'))
+
+        #print(y_pred)
+        y_pred[non_carriers_mask] = 0
         score = metrics.roc_auc_score(y_test, y_pred)
         scores.append(score)
+        #print(y_pred)
+        
+        total_pred = np.concatenate((total_pred, y_pred))
+        total_test = np.concatenate((total_test, y_test))
+
+    #for x, y in zip(total_test, total_pred):
+    #    print(x, y, x-y)
+        
+    print("Global ROC score", metrics.roc_auc_score(total_test, total_pred))
+        
     print(scores)
     print(np.array(scores).mean())
 
@@ -248,8 +296,6 @@ elif do_cross_val == 3:
 
         _, X_valid, _, y_valid = clf.train_test_split(X, y, clf.eval_size)
         probas = clf.predict_proba(X_valid)[:,0]
-        print("ROC score", metrics.roc_auc_score(y_valid, probas))
-        
 
         #y_pred = clf.predict_proba(X_test)[:, 0]
 
@@ -257,6 +303,7 @@ elif do_cross_val == 3:
         
         #score = metrics.roc_auc_score(y_test, y_pred)
         #scores.append(score)
+    print("Global ROC score", metrics.roc_auc_score(toal_valid, total_probas))
     print(scores)    
     
 else:
