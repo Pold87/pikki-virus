@@ -1,0 +1,10 @@
+run ../aggregate.py
+(ipynbs need to be opened and run line by line - sorry for the inconvenience)
+run make_aggregated_with_nummopsquitos.ipynb
+run predict Mosquitos on daily basis.ipynb
+run Add_Prios.ipynb
+run drop_duplicates.ipynb
+
+Datasets to be used are "unique_train.csv" and "new_test_priors.csv".
+In order to set non-vector-species proba to 0, use ../test.csv and pandas indexing.
+
