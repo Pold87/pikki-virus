@@ -144,7 +144,14 @@ def str_to_date(str):
     """
     
     return dt.datetime.strptime(str, '%Y-%m-%d').date()
-
+    
+def date_to_calweek(date_obj):
+    
+    """
+    determine which calendar week of the year a specific date was on
+    """
+    
+    return dt.date.isocalendar(date_obj)[1]
 
 def weekly_avrg(df, new_col_name, var_col_name):
 
@@ -323,10 +330,13 @@ def load_data(path='train.csv'):
 
     df = pd.read_csv(path)
     df.Date = df.Date.map(str_to_date)
+    
+    # For each row determine which calendar week the measuring date was in
+    df['Calendar_Week']= df.Date.map(date_to_calweek)
 
     # For each row, determine which weather station is closer
-
     df['Station'] = df.apply(closer_ws, axis=1)
+    
 
     # Merge train/test data frame and weather data 
     merged_df = pd.merge(df, df_weather, on=['Station', 'Date'])
