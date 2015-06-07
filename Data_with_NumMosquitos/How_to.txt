@@ -7,4 +7,5 @@ run drop_duplicates.ipynb
 
 Datasets to be used are "unique_train.csv" and "new_test_priors.csv".
 In order to set non-vector-species proba to 0, use ../test.csv and pandas indexing.
+additionally, the new target value is df_train.WnvPresent_DateTrapSpecies
 
