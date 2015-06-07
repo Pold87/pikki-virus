@@ -32,37 +32,60 @@ test = pd.read_csv("test_filled_new.csv")
 submission = pd.read_csv("sampleSubmission.csv")
 
 
+features_to_select = ['Species',
+           'Latitude',
+           'Longitude',
+           'precip_week',
+           '9_week_avrgTavg',
+           '10_week_avrgTavg',
+           'Year',
+           'Date']
+
+
 # Create df for leave-one-year-out cross-validation
-train_for_loo = train.drop(['NumMosquitos',
-                            'Trap',
-                            'AddressAccuracy',
-                            'AddressNumberAndStreet',
-                            'Address',
-                            'Street',
-                            'CodeSum'
-], axis=1)
+#train_for_loo = train.drop(['NumMosquitos',
+#                            'Trap',
+#                            'Month',
+#                           'Block',
+#                            'AddressAccuracy',
+#                            'AddressNumberAndStreet',
+#                            'Address',
+#                            'Street',
+#                            'CodeSum'
+#], axis=1)
+
+train_for_loo = train[features_to_select  + ['WnvPresent']]
 
 # Create df for training on the full training set
-X = train.drop(['Date',
-                'Trap',
-                'NumMosquitos',
-                'AddressAccuracy',
-                'AddressNumberAndStreet',
-                'Address',
-                'Street',
-                'CodeSum',
-                'WnvPresent'], axis=1)
+#X = train.drop(['Date',
+#                'Month',
+#                'Trap',
+#                'Block',
+#                'NumMosquitos',
+#                'AddressAccuracy',
+#                'AddressNumberAndStreet',
+#                'Address',
+#                'Street',
+#                'CodeSum',
+#                'WnvPresent'], axis=1)
+
+X = train[features_to_select]
 
 
 # Create df for testing and predicting
-X_real_test = test.drop(['Id',
-                         'Date',
-                         'Trap',
-                         'Address',
-                         'Street',
-                         'AddressAccuracy',
-                         'CodeSum',
-                         'AddressNumberAndStreet'], axis=1)
+#X_real_test = test.drop(['Id',
+#                         'Date',
+#                         'Month',
+#                         'Block',
+#                         'Trap',
+#                         'Address',
+#                         'Street',
+#                         'AddressAccuracy',
+#                         'CodeSum',
+#                         'AddressNumberAndStreet'], axis=1)
+#
+
+X_real_test = test[features_to_select]
 
 species_encoder = preprocessing.LabelEncoder()
 trap_encoder = preprocessing.LabelEncoder()
@@ -130,13 +153,13 @@ class AdjustVariable(object):
 #                                 random_state=35,
 #                                 min_samples_leaf=6)
 #
-#clf = RandomForestClassifier(n_estimators=2000,
-#                             min_samples_leaf=4)
+clf = RandomForestClassifier(n_estimators=100,
+                             min_samples_leaf=4)
 
-#clf = neighbors.KNeighborsClassifier(50,
-#                                     p=3)
+# clf = neighbors.KNeighborsClassifier(50,
+#                                      p=3)
 
-clf = neighbors.KernelDensity()
+# clf = neighbors.KernelDensity()
 
 # clf = LogisticRegression()
 # clf = linear_model.Ridge(alpha=0.1)
@@ -146,11 +169,11 @@ clf = neighbors.KernelDensity()
 #clf = linear_model.ARDRegression(n_iter=500,
 #                                 normalize=True)
 
- #clf = xgbwrapper.XgbWrapper({'objective': 'binary:logistic',
- #                 'eval_metric': 'auc',
- #                 'eta': 0.1,
- #                 'silent': 0,
- #                 'max_delta_step': 1})
+clf = xgbwrapper.XgbWrapper({'objective': 'binary:logistic',
+                  'eval_metric': 'auc',
+                  'eta': 0.1,
+                  'silent': 0,
+                  'max_delta_step': 1})
 
 
 # 'Normal' 70 / 30 cross-validation
@@ -188,10 +211,10 @@ elif do_cross_val == 2:
         
         clf.fit(X_train, y_train)
 
-        y_pred = clf.predict_proba(X_test) [:, 1]
-        print(y_pred)
+        # y_pred = clf.predict_proba(X_test) [:, 1]
+        # print(y_pred)
               
-        #        y_pred = clf.predict_proba(X_test) # For xgbwrapper best score: 57.2
+        y_pred = clf.predict_proba(X_test) # For xgbwrapper best score: 57.2
         #         y_pred = clf.predict_proba(X_test)
         # y_pred = clf.predict(X_test)
 
@@ -206,6 +229,13 @@ elif do_cross_val == 2:
         y_pred[non_carriers_mask] = 0
         score = metrics.roc_auc_score(y_test, y_pred)
         scores.append(score)
+
+        #import operator
+        #feat_importances = dict(zip(X_train.columns, clf.feature_importances_))
+        #sorted_feat_importances = sorted(feat_importances.items(), key=operator.itemgetter(1))
+        
+        #print(sorted_feat_importances)
+        
         #print(y_pred)
         
         total_pred = np.concatenate((total_pred, y_pred))
