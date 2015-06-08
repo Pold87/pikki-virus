@@ -6,7 +6,7 @@ class XgbWrapper (ClassifierMixin):
     """
     Wrapper class for xgboost.Booster 
     """
-    def __init__(self, param, num_round = 200, watchlist = ()):
+    def __init__(self, param, num_round = 500, watchlist = ()):
         """
         """
         self.param = param

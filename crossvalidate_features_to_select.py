@@ -18,7 +18,7 @@ from sklearn.linear_model import LogisticRegression
 reload(xgbwrapper)
 
 # Cross validation or submission?
-do_cross_val = True
+do_cross_val = False
 
 # Read in kaggle files
 train = pd.read_csv("Data_with_NumMosquitos/unique_train.csv")
@@ -27,6 +27,14 @@ test = pd.read_csv("Data_with_NumMosquitos/new_test_priors.csv")
 submission = pd.read_csv("sampleSubmission.csv")
 
 features_to_select = [
+    'ResultDir',
+    'AvgSpeed',
+    'precip_week',
+    'WnvPresent_conditional_Species',
+    'WnvPresent_conditional_AddressAccuracy',
+    'WnvPresent_conditional_Calendar_Week',
+    'WnvPresent_conditional_Tmin',
+    'WnvPresent_conditional_ResultDir',
     'Species',
     'Latitude',
     'Longitude',
@@ -78,14 +86,13 @@ def year_train_test_split(train, target, year):
 
 # Create classifiers
 
-# clf = RandomForestClassifier(n_estimators=500,
-#                            min_samples_leaf=5)
+clf = RandomForestClassifier(n_estimators=500,
+                            min_samples_leaf=5)
 
 clf = xgbwrapper.XgbWrapper({'objective': 'binary:logistic',
-                  'eval_metric': 'auc',
-                  'eta': 0.05,
-                  'silent': 1,
-                  'max_delta_step': 1})
+                             'eval_metric': 'auc',
+                             'eta': 0.05,
+                             'silent': 1})
 
 
 # Cross validation
@@ -117,6 +124,11 @@ if do_cross_val:
         score = metrics.roc_auc_score(y_test, y_pred)
         scores.append(score)
         
+        #import operator
+        #feat_importances = dict(zip(X_train.columns, clf.feature_importances_))
+        #sorted_feat_importances = sorted(feat_importances.items(), key=operator.itemgetter(1))
+        #print(sorted_feat_importances)
+        
         total_pred = np.concatenate((total_pred, y_pred))
         total_test = np.concatenate((total_test, y_test))
         
@@ -131,8 +143,8 @@ else:
     clf.fit(X, train.WnvPresent_DateTrapSpecies)
 
 
-    y = clf.predict_proba(X_real_test) [:, 1] # Random Forest
-    # y = clf.predict_proba(X_real_test) # For XGB 
+    # y = clf.predict_proba(X_real_test) [:, 1] # Random Forest
+    y = clf.predict_proba(X_real_test) # For XGB 
 
     submission.WnvPresent = y
     submission.to_csv("unqiue_XGB.csv", index=False)
