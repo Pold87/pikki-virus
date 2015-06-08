@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 
-foldername = os.getcwd() + '/submissions'
+foldername = "/home/thomas/Desktop/pikki virus/new_Git/modelstomean"#os.getcwd() + '/submissions'
 
 filenames = ['submission_1.csv', 'submission_2.csv', 
              'submission_3.csv', 'submission_4.csv', 
@@ -13,6 +13,7 @@ by_folder = 1   # 1 := take all submissions from 'foldername'
 
 comb = 0
 if by_folder == 1:
+    print('as expected')
     cnt = 0
     for subdir, dirs, files in os.walk(foldername):
         for file in files:
@@ -21,10 +22,11 @@ if by_folder == 1:
             cnt = cnt + 1
     comb = comb / cnt
 else:
-    for file in filenames:
-        df = np.genfromtxt(file, delimiter=',', skip_header=1)
-        comb = comb + df[:,1]
-    comb = comb / len(filenames)
+    print('waaaaat')
+#    for file in filenames:
+#        df = np.genfromtxt(file, delimiter=',', skip_header=1)
+#        comb = comb + df[:,1]
+#    comb = comb / len(filenames)
 
 subm_df = pd.read_csv(filenames[0])
 subm_df['WnvPresent'] = comb.astype(float)
