@@ -308,6 +308,11 @@ def load_weather(path='weather.csv'):
     df_weather.Date = df_weather.Date.map(str_to_date)
     df_weather['Year'] = df_weather.Date.apply(lambda x: x.year)
     df_weather['Month'] = df_weather.Date.apply(lambda x: x.month)
+
+
+    # Add weekly average of temperature and and precipitation		
+    df_weather = weekly_avrg(df_weather,'Tavg_week','Tavg')		
+    df_weather = weekly_avrg(df_weather,'precip_week','PrecipTotal')
     
     # Add new columns for Heat Degree Week and Cool Degree Week
     df_weather['heat_dw'] = df_weather.Tavg_week.map(heat_degree_week)
@@ -317,14 +322,6 @@ def load_weather(path='weather.csv'):
     #df_weather['heat_dw_shifted2'] = df_weather.heat_dw
     #df_weather['cool_dw_shifted2'] = df_weather.cool_dw
 
-    # Add shifted moving windows, shifted by 1 to 4 weeks 
-    for weeks in range(1, 4):
-        
-        # Add shifted moving window for precipiation
-        df_weather = df_weather.groupby(['Station','Year']).apply(average_shifted, weeks, 'PrecipTotal')
-        
-        #Add shifted moving window for temperature
-        df_weather = df_weather.groupby(['Station','Year']).apply(average_shifted, weeks, 'Tavg')        
         
     # Add moving windows
     for weeks in range(1, 24):
@@ -334,6 +331,16 @@ def load_weather(path='weather.csv'):
 
         # Add moving moving window for temperature
         df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, weeks, 'Tavg')
+
+    # Add shifted moving windows, shifted by 1 to 4 weeks 
+    for weeks in range(1, 4):
+        
+        # Add shifted moving window for precipiation
+        df_weather = df_weather.groupby(['Station','Year']).apply(average_shifted, weeks, 'PrecipTotal')
+        
+        #Add shifted moving window for temperature
+        df_weather = df_weather.groupby(['Station','Year']).apply(average_shifted, weeks, 'Tavg')        
+
     
     return df_weather
 
