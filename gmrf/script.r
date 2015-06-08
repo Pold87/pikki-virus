@@ -19,7 +19,7 @@ print("Reading data ...")
 train <- read.csv("train.csv", header = T)
 train.data <- data.frame(Date=train$Date, Species=train$Species, Trap=train$Trap, WnvPresent=train$WnvPresent)
 
-# aggregate(WnvPresent ~ Species, train, sum)
+species <- aggregate(WnvPresent ~ Species, train, sum)
 # formula <- time + location # + weather + spraying
 
 test <- read.csv("test.csv", header = T)
@@ -31,11 +31,11 @@ test.data = head(test.data, 100)
 
 print("Merging data ...")
 
-
 # weather.data$Date <- as.numeric(as.POSIXct(as.Date(weather.data$Date, "%Y-%m-%d")))	# capital Y is important
 train.data$Date <- as.numeric(as.POSIXct(as.Date(train.data$Date, "%Y-%m-%d")))	# capital Y is important
 test.data$Date <- as.numeric(as.POSIXct(as.Date(test.data$Date, "%Y-%m-%d")))	# capital Y is important
-test.data$WnvPresent <- NA
+test.data$WnvPresent <- 0
+test.data$WnvPresent[which(is.element(test.data$Species, species$Species[which(species$WnvPresent != 0)]))] <- NA
 # test.data$NumMosquitos <- NA
 # train.data$Id <- (1:nrow(train.data)) + nrow(test.data)
 

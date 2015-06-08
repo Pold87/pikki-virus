@@ -144,7 +144,14 @@ def str_to_date(str):
     """
     
     return dt.datetime.strptime(str, '%Y-%m-%d').date()
-
+    
+def date_to_calweek(date_obj):
+    
+    """
+    determine which calendar week of the year a specific date was on
+    """
+    
+    return dt.date.isocalendar(date_obj)[1]
 
 def weekly_avrg(df, new_col_name, var_col_name):
 
@@ -201,6 +208,21 @@ def mov_window(chunk, x, w_var):
     #iterate over each group by  
     chunk[str(x) + "_week_avrg" + w_var] = pd.rolling_mean(chunk[w_var], window=7 * x, min_periods=1)
 
+    return chunk
+    
+def average_shifted(chunk, x, w_var):
+    
+    """
+    Shifts the moving average column for the 1 week downward by a x weeks.
+    Consequently calculates the average temp/precipitation x weeks ago. 
+    This naturally results in several NaN values at the beginning of each year and thus
+    should only be done for a small number of weeks (below, I selected 1 to 4)
+    """
+    
+    col = '1_week_avrg' + w_var
+    
+    chunk[w_var + '_' + str(x) + '_weeks_ago'] = chunk[col].shift(x*7)
+    
     return chunk
 
 
@@ -287,8 +309,9 @@ def load_weather(path='weather.csv'):
     df_weather['Year'] = df_weather.Date.apply(lambda x: x.year)
     df_weather['Month'] = df_weather.Date.apply(lambda x: x.month)
 
-    # Add weekly average of temperature and and precipitation
-    df_weather = weekly_avrg(df_weather,'Tavg_week','Tavg')
+
+    # Add weekly average of temperature and and precipitation		
+    df_weather = weekly_avrg(df_weather,'Tavg_week','Tavg')		
     df_weather = weekly_avrg(df_weather,'precip_week','PrecipTotal')
     
     # Add new columns for Heat Degree Week and Cool Degree Week
@@ -299,7 +322,7 @@ def load_weather(path='weather.csv'):
     #df_weather['heat_dw_shifted2'] = df_weather.heat_dw
     #df_weather['cool_dw_shifted2'] = df_weather.cool_dw
 
-
+        
     # Add moving windows
     for weeks in range(1, 24):
 
@@ -308,6 +331,16 @@ def load_weather(path='weather.csv'):
 
         # Add moving moving window for temperature
         df_weather = df_weather.groupby(['Station','Year']).apply(mov_window, weeks, 'Tavg')
+
+    # Add shifted moving windows, shifted by 1 to 4 weeks 
+    for weeks in range(1, 4):
+        
+        # Add shifted moving window for precipiation
+        df_weather = df_weather.groupby(['Station','Year']).apply(average_shifted, weeks, 'PrecipTotal')
+        
+        #Add shifted moving window for temperature
+        df_weather = df_weather.groupby(['Station','Year']).apply(average_shifted, weeks, 'Tavg')        
+
     
     return df_weather
 
@@ -323,10 +356,13 @@ def load_data(path='train.csv'):
 
     df = pd.read_csv(path)
     df.Date = df.Date.map(str_to_date)
+    
+    # For each row determine which calendar week the measuring date was in
+    df['Calendar_Week']= df.Date.map(date_to_calweek)
 
     # For each row, determine which weather station is closer
-
     df['Station'] = df.apply(closer_ws, axis=1)
+    
 
     # Merge train/test data frame and weather data 
     merged_df = pd.merge(df, df_weather, on=['Station', 'Date'])

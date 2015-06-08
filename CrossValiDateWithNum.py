@@ -18,12 +18,12 @@ from sklearn import linear_model
 from sklearn.linear_model import LogisticRegression
 
 
-do_cross_val = 2
+do_cross_val = 22
 
 # Read in kaggle files
 train = pd.read_csv("train_filled_new.csv")
 test = pd.read_csv("test_filled_new.csv")
-train = pd.read_csv("Data_with_NumMosquitos/aggregated_train_with_nummosquitos.csv")
+train = pd.read_csv("Data_with_NumMosquitos/aggregated_train_NumMosquito_no_strings.csv")
 test = pd.read_csv("Data_with_NumMosquitos/aggregated_test_NumMosquito_no_strings.csv")
 submission = pd.read_csv("sampleSubmission.csv")
 
@@ -120,9 +120,9 @@ class AdjustVariable(object):
 clf = RandomForestClassifier(n_estimators=1000,
                              min_samples_leaf=6,n_jobs=-1)
 
-clf = LogisticRegression()
-clf = linear_model.BayesianRidge(n_iter=5000,
-                                 normalize=True)
+#clf = LogisticRegression()
+#clf = linear_model.BayesianRidge(n_iter=5000,
+#                                 normalize=True)
 
 #clf = linear_model.ARDRegression(n_iter=500,
 #                                 normalize=True)
