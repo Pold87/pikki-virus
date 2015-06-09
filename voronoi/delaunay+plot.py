@@ -6,15 +6,16 @@ import numpy as np
 import itertools
 
 
-traps = pd.read_csv('../train.csv')[['Longitude', 'Latitude', 'Species', 'NumMosquitos']]
-locations = traps[['Longitude', 'Latitude']].values
-
+locations = pd.read_csv('../unique_train.csv')[['Longitude', 'Latitude']]
+locations = locations.drop_duplicates(['Longitude', 'Latitude'])
+locations = locations.values
 points = locations
 
 ### make delaunay diagram
 tri = Delaunay(points)
 find_neighbours = lambda x,triang: list(set(indx for simplex in triang.simplices if x in simplex for indx in simplex if indx !=x))
 
+### print graph
 for pidx in range(points.size//2):
 	neighbours = find_neighbours(pidx, tri)
 	if neighbours != []:
@@ -33,7 +34,7 @@ plt.imshow(mapdata,
            aspect=aspect)
 
 ### plot delaunay vertices which have end point
-plt.triplot(points[:,0], points[:,1], tri.simplices.copy(), 'k-')
+plt.triplot(locations[:,0], locations[:,1], tri.simplices.copy(), 'k-')
 
 ### plot traps
 plt.scatter(locations[:,0], locations[:,1], marker='x')
