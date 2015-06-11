@@ -29,20 +29,16 @@ do_cross_val = 2
 predict_num_mosquitos = False
 
 # Read in kaggle files
-train = pd.read_csv("train_filled_new.csv")
+train = pd.read_csv("volker_unique_train.csv")
 test = pd.read_csv("test_filled_new.csv")
 submission = pd.read_csv("sampleSubmission.csv")
 
 
-#features_to_select = ['Species',
-#           'Latitude',
-#           'Longitude',
-#           'precip_week',
-#           '9_week_avrgTavg',
-#           '10_week_avrgTavg',
-#           'Year',
-#           'Date']
-#
+# Dummy variables
+s = pd.Series(list(train.Species))
+dummies = pd.get_dummies(s)
+train.drop('Species', axis=1, inplace=True)
+train['UNSPECIFIED SPECIES'] = 0
 
 # Create df for leave-one-year-out cross-validation
 train_for_loo = train.drop([#'NumMosquitos',
@@ -73,6 +69,11 @@ X = train.drop(['Date',
 
 # X = train[features_to_select]
 
+# Dummy variables
+s = pd.Series(list(test.Species))
+dummies = pd.get_dummies(s)
+test.drop('Species', axis=1, inplace=True)
+pd.concat([dummies, test], axis=1)
 
 # Create df for testing and predicting
 X_real_test = test.drop(['Id',
@@ -85,29 +86,6 @@ X_real_test = test.drop(['Id',
                          'AddressAccuracy',
                          'CodeSum',
                          'AddressNumberAndStreet'], axis=1)
-
-
-# X_real_test = test[features_to_select]
-
-species_encoder = preprocessing.LabelEncoder()
-trap_encoder = preprocessing.LabelEncoder()
-
-X.Species = species_encoder.fit_transform(X.Species)
-# X.Trap = trap_encoder.fit_transform(X.Trap)
-
-train_for_loo.Species = species_encoder.transform(train_for_loo.Species)
-# train_for_loo.Trap = trap_encoder.fit_transform(train_for_loo.Trap)
-
-# Handle UNSPECIFIED CULEX
-
-all_species = train.Species.unique()
-
-unspecified_mask = X_real_test.Species == "UNSPECIFIED CULEX"
-
-# TODO: Or use worst case!
-X_real_test.ix[unspecified_mask, "Species"] = np.random.choice(all_species, len(unspecified_mask))
-X_real_test.Species = species_encoder.transform(X_real_test.Species)
-
 
 # X_real_test.Trap = trap_encoder.transform(X_real_test.Trap)
 
@@ -124,7 +102,7 @@ def year_train_test_split(train, target, year):
     msk = X.Year == year
 
     # Drop date column
-    X = X.drop(['Year', 'Date', 'WnvPresent'], axis=1)
+    X = X.drop(['Year', 'Date', 'WnvPresent', 'Id'], axis=1)
     
     # Create dfs based on mask    
     X_train = X[~msk]
@@ -158,7 +136,7 @@ class AdjustVariable(object):
 #                                 random_state=35,
 #                                 min_samples_leaf=6)
 #
-clf = RandomForestClassifier(n_estimators=300,
+clf = RandomForestClassifier(n_estimators=1,
                              min_samples_leaf=4)
 
 # clf = neighbors.KNeighborsClassifier(50,
@@ -231,15 +209,6 @@ elif do_cross_val == 2:
         #         y_pred = clf.predict_proba(X_test)
         # y_pred = clf.predict(X_test)
 
-
-
-        non_carriers_mask = (X_test.Species == species_encoder.transform('CULEX SALINARIUS')) |\
-                            (X_test.Species == species_encoder.transform('CULEX ERRATICUS')) |\
-                            (X_test.Species == species_encoder.transform('CULEX TARSALIS')) |\
-                            (X_test.Species == species_encoder.transform('CULEX TERRITANS'))
-
-        #print(y_pred)
-        y_pred[non_carriers_mask] = 0
         score = metrics.roc_auc_score(y_test, y_pred)
         scores.append(score)
 
@@ -248,8 +217,6 @@ elif do_cross_val == 2:
         sorted_feat_importances = sorted(feat_importances.items(), key=operator.itemgetter(1))
         
         print(sorted_feat_importances)
-        
-        #print(y_pred)
         
         total_pred = np.concatenate((total_pred, y_pred))
         total_test = np.concatenate((total_test, y_test))

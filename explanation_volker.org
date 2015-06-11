@@ -1,0 +1,13 @@
+* Cross-validation:
+
+- crossvalidate_features_to_select.py:
+Currently uses Thomas' stuff and one select which features one wants
+to keep (vs. which you want to drop)
+
+- features_to_select_volker.py
+Uses Volker's stuff and one has to select
+
+- crossvalidate.py
+
+Uses Volker's stuff and one has to drop.
+Includes Regressor.

@@ -27,10 +27,21 @@ reload(xgbwrapper)
 do_cross_val = True
 predict_num_mosquitos = False
 make_sub = False
+drop = 1
 
 # Read in kaggle files
-train = pd.read_csv("train_filled_new.csv")
+train = pd.read_csv("volker_unique_train.csv")
+#train = pd.read_csv("train_filled_new.csv")
 test = pd.read_csv("test_filled_new.csv")
+
+# Dummy variables
+s = pd.Series(list(train.Species))
+dummies = pd.get_dummies(s)
+train.drop('Species', axis=1, inplace=True)
+
+train = pd.concat([dummies, train], axis=1)
+
+
 submission = pd.read_csv("sampleSubmission.csv")
         
 
@@ -39,19 +50,27 @@ features_to_select = [
     'Latitude',
     'Longitude',
     'precip_week',
+    'Tavg_1_weeks_ago',
+    'Tavg_2_weeks_ago',
+    'Tavg_3_weeks_ago',
+    'PrecipTotal_1_weeks_ago',
+    'PrecipTotal_2_weeks_ago',
+    'PrecipTotal_3_weeks_ago',
     '5_week_avrgPrecipTotal',
     '6_week_avrgPrecipTotal',
     '7_week_avrgTavg',
     '8_week_avrgTavg',
     '9_week_avrgTavg',
-    '10_week_avrgTavg',
+#     '10_week_avrgTavg',
     'Year',
     'Date']
 
 
 # Create df for leave-one-year-out cross-validation
 
-train_for_loo = train[features_to_select  + ['WnvPresent', 'NumMosquitos']]
+train_for_loo = train[features_to_select  + ['WnvPresent',
+                                              'NumMosquitos']]
+
 
 # Create df for training on the full training set
 
@@ -123,8 +142,8 @@ class AdjustVariable(object):
         self.variable.set_value(np.float32(self.target + delta))    
 
         
-clf = RandomForestClassifier(n_estimators=100,
-                             min_samples_leaf=4)
+#clf = RandomForestClassifier(n_estimators=1000,
+#                             min_samples_leaf=6)
 
 #clf = xgbwrapper.XgbWrapper({'objective': 'binary:logistic',
 #                  'eval_metric': 'auc',
@@ -161,7 +180,7 @@ for year in [2007, 2009, 2011, 2013]:
 
     clf.fit(X_train.drop(['NumMosquitos'], axis=1), y_train)
 
-    y_pred = clf.predict_proba(X_test) [:, 1]
+    y_pred = clf.predict_proba(X_test)[:, 1]
     # print(y_pred)
 
     # y_pred = clf.predict_proba(X_test) # For xgbwrapper best score: 57.2
@@ -175,15 +194,18 @@ for year in [2007, 2009, 2011, 2013]:
                         (X_test.Species == species_encoder.transform('CULEX TARSALIS')) |\
                         (X_test.Species == species_encoder.transform('CULEX TERRITANS'))
 
-    y_pred[non_carriers_mask] = 0
-    score = metrics.roc_auc_score(y_test, y_pred)
-    scores.append(score)
+    # y_pred[non_carriers_mask] = 0
+    #score = metrics.roc_auc_score(y_test, y_pred)
+    #scores.append(score)
 
     import operator
     feat_importances = dict(zip(X_train.columns, clf.feature_importances_))
     sorted_feat_importances = sorted(feat_importances.items(), key=operator.itemgetter(1))
 
-    print(sorted_feat_importances)
+    # print(sorted_feat_importances)
+
+    print(y_pred)
+    print(y_test)
 
     total_pred = np.concatenate((total_pred, y_pred))
     total_test = np.concatenate((total_test, y_test))
@@ -192,10 +214,6 @@ for year in [2007, 2009, 2011, 2013]:
 #    print(x, y, x-y)
 
 print("Global ROC score", metrics.roc_auc_score(total_test, total_pred))
-
-print(scores)
-print(np.array(scores).mean())
-
 
 if make_sub:
     clf.fit(X, train.WnvPresent)
