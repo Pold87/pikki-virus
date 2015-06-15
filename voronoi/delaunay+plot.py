@@ -1,4 +1,4 @@
-from scipy.spatial import Delaunay, delaunay_plot_2d
+from scipy.spatial import Delaunay, ConvexHull
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -6,13 +6,27 @@ import numpy as np
 import itertools
 
 
-locations = pd.read_csv('../unique_train.csv')[['Longitude', 'Latitude']]
+locations = pd.read_csv('../unique_train.csv')[['Longitude', 'Latitude', 'Block']]
 locations = locations.drop_duplicates(['Longitude', 'Latitude'])
 locations = locations.values
 points = locations
 
 ### make delaunay diagram
 tri = Delaunay(points)
+
+### remove convex hull for more sensible graph
+hull = ConvexHull(points)
+delete_indices = [];
+for tidx in range(tri.simplices.shape[0]):
+	for hidx in range(hull.simplices.shape[0]):
+		is_hull = (int((tri.simplices[tidx] == hull.simplices[hidx][0]).any()) + int((tri.simplices[tidx] == hull.simplices[hidx][1]).any())) == 2
+		if is_hull:
+			delete_indices.append(tidx)
+delete_indices = sorted(np.sort(delete_indices), reverse=True)
+for idx in delete_indices:
+	tri.simplices = np.delete(tri.simplices, idx, 0)
+
+### list neighbours
 find_neighbours = lambda x,triang: list(set(indx for simplex in triang.simplices if x in simplex for indx in simplex if indx !=x))
 
 ### print graph
@@ -39,12 +53,8 @@ plt.triplot(locations[:,0], locations[:,1], tri.simplices.copy(), 'k-')
 ### plot traps
 plt.scatter(locations[:,0], locations[:,1], marker='x')
 
-### mark points
-# for j, p in enumerate(points):
-# 	plt.text(p[0]-0.03, p[1]+0.03, j, ha='right') # label the points
-
 # set image boundaries
 ax.set_xlim(-88, -87.5)
 ax.set_ylim(41.6, 42.1)
 
-plt.savefig('delaunyzed.png')
+plt.savefig('plot.png')
