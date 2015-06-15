@@ -1,0 +1,54 @@
+Required folder structure:
+
+GRID_PIPELINE
+|-------add_pred_Num_I.py
+|-------add_pred_Num_II.py
+|-------add_pred_Wnv_I.py
+|-------aggregate_weather.py
+|-------complement_data.py
+|-------predict_Num_I.py
+|-------predict_Num_II.py	
+|-------predict_Num_I_cv.py	[not yet fully implemented]
+|-------predict_Num_II_cv.py	[not yet fully implemented]
+|-------predict_Wnv_I.py
+|-------predict_Wnv_I_cv.py	[not yet fully implemented]
+|-------predict_Wnv_II.py
+|-------predict_Wnv_II_cv.py	[not yet fully implemented]
+|-------run_pipeline.sh
+|-------train_fill.py
+|-------trap_unify.py
+|-------
+|
+|-------TRAIN
+|	|-------train.csv
+|	|
+|-------TEST
+|	|-------test.csv
+|	|
+|-------COMP
+|	|
+|-------WEATHER
+|	|-------weather.csv
+|	|-------weather_hand.csv	(hand corrected weather file - 4 entries changed)
+|	|
+
+
+Run:				
+
+I	trap_unify.py		[renames traps, that have the same nametag, but 2 (or more) locations in the combined train+test-set]	
+II	complement_data.py	[creates an additional set, that has a row for each year, calender week, hex-grid-cell, species;
+				 	reshapes training and test set according to date, hex-grid-cell, species]
+III	train_fill.py		[creates additional 0/0-rows for all missing species in measurements]
+IV	aggregate_weather.py	[aggregates various weather measurements and statistics to the training, test and complementary set]
+V	predict_Num_I.py	[estimates numbers of mosquitos for every date, hex-grid-cell and species] 
+VI	add_pred_Num_I.py	[adds (time+neighbourhood) features based on number estimations to train-, test- and comp-datasets]
+VII	predict_Num_II.py	[refines estimations of numbers of mosquitos for date, hex-grid-cell and species] 
+VIII	add_pred_Num_II.py	[adds refined (time+neighbourhood) features based on number estimations to train-, test- and comp-datasets]
+IX	predict_Wnv_I.py	[estimates presence of west-nile-virus every date, hex-grid-cell and species]
+X	add_pred_Wnv_I.py	[adds (time+neighbourhood) features based on number estimations to train-, test- and comp-datasets]
+XI	predict_Wnv_II.py	[predicts west-nile-virus for test-set, post-processes predictions and creates submission]
+	
+or alternatively:
+
+	./run_pipeline.sh	[not suggested on local machines, but for use on university cluster]
+				[might require to run 'chmod +x run_pipeline.sh' first]
