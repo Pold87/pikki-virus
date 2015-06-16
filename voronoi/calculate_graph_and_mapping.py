@@ -1,4 +1,4 @@
-from scipy.spatial import Delaunay
+from scipy.spatial import Delaunay, ConvexHull
 import pandas as pd
 import numpy as np
 
@@ -11,6 +11,18 @@ points = locations
 ### make delaunay diagram
 tri = Delaunay(points)
 find_neighbours = lambda x,triang: list(set(indx for simplex in triang.simplices if x in simplex for indx in simplex if indx !=x))
+
+### remove convex hull for more sensible graph
+hull = ConvexHull(points)
+delete_indices = [];
+for tidx in range(tri.simplices.shape[0]):
+	for hidx in range(hull.simplices.shape[0]):
+		is_hull = (int((tri.simplices[tidx] == hull.simplices[hidx][0]).any()) + int((tri.simplices[tidx] == hull.simplices[hidx][1]).any())) == 2
+		if is_hull:
+			delete_indices.append(tidx)
+delete_indices = sorted(np.sort(delete_indices), reverse=True)
+for idx in delete_indices:
+	tri.simplices = np.delete(tri.simplices, idx, 0)
 
 ### write graph file
 graphfile=open('./graph.graph', 'w+')

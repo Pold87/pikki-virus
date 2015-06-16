@@ -6,7 +6,7 @@ import numpy as np
 import itertools
 
 
-locations = pd.read_csv('../unique_train.csv')[['Longitude', 'Latitude', 'Block']]
+locations = pd.read_csv('../unique_train.csv')[['Longitude', 'Latitude']]
 locations = locations.drop_duplicates(['Longitude', 'Latitude'])
 locations = locations.values
 points = locations
@@ -48,7 +48,7 @@ plt.imshow(mapdata,
            aspect=aspect)
 
 ### plot delaunay vertices which have end point
-plt.triplot(locations[:,0], locations[:,1], tri.simplices.copy(), 'k-')
+plt.triplot(locations[:,0], locations[:,1], tri.simplices, 'k-')
 
 ### plot traps
 plt.scatter(locations[:,0], locations[:,1], marker='x')
