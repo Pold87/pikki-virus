@@ -4,6 +4,10 @@ python trap_unify.py
 now=$(date +"%T")
 echo "trap_unify.py finished at $now" >> check.txt
 
+python trap_drop_duplicates.py
+now=$(date +"%T")
+echo "trap_drop_duplicates.py finished at $now" >> check.txt
+
 python complement_data.py
 now=$(date +"%T")
 echo "complement_data.py finished at $now" >> check.txt

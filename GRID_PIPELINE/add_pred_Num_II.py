@@ -97,6 +97,8 @@ def mean_num(chunk):
         chunk['Mean_Num_Lvl_2_cwbef'] = 0
         chunk['Min_Num_Lvl_2_cwbef'] = 0
         chunk['Max_Num_Lvl_2_cwbef'] = 0
+        
+    chunk = chunk.drop(['NumMosquitos'],axis=1)
     
     return chunk
 
@@ -112,7 +114,7 @@ def load_numbers():
     #newp_df = new_df.iloc[0:300].copy()
     newp_df = newp_df.reset_index()    
     
-    cpus = mp.cpu_count() 
+    cpus = 50
     
     p = mp.Pool(processes=cpus)
     split_dfs = np.array_split(newp_df,cpus)
