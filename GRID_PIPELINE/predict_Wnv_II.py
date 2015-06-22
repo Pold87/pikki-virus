@@ -6,7 +6,7 @@ import os.path
 import numpy as np
 
 from sklearn.preprocessing import scale
-
+n_est = 1000
 # Load datasets
 df_train = pd.read_csv('TRAIN/train_hex_wnv_pred_I.csv')
 df_test = pd.read_csv('TEST/test_hex_wnv_pred_I.csv')
@@ -36,7 +36,7 @@ X_test = X_test.drop(droppers_test,axis=1)
 X_train.Species = species_encoder.fit_transform(X_train.Species)
 X_test.Species = species_encoder.transform(X_test.Species)
 
-clf = RandomForestClassifier(n_estimators = 1000)
+clf = RandomForestClassifier(n_estimators = n_est)
 
 X_train = scale(X_train)
 X_test = scale(X_test)

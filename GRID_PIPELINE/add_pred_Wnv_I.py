@@ -99,9 +99,7 @@ def mean_num(chunk):
         chunk['Mean_Wnv_Lvl_2_cwbef'] = 0
         chunk['Min_Wnv_Lvl_2_cwbef'] = 0
         chunk['Max_Wnv_Lvl_2_cwbef'] = 0
-        
-    chunk = chunk.drop(['WnvPresent'],axis=1)
-    
+           
     return chunk
 
 def load_apply(ndf):
@@ -128,7 +126,7 @@ def load_numbers():
     
     pdt.assert_series_equal(parts['index'], newp_df['index'])
 
-    parts = parts.drop(['index'], axis=1)
+    parts = parts.drop(['WnvPresent', 'index'], axis=1)
 
     return parts
 

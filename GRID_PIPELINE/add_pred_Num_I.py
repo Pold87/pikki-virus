@@ -97,9 +97,7 @@ def mean_num(chunk):
         chunk['Mean_Num_Lvl_2_cwbef'] = 0
         chunk['Min_Num_Lvl_2_cwbef'] = 0
         chunk['Max_Num_Lvl_2_cwbef'] = 0
-        
-    chunk = chunk.drop(['NumMosquitos'],axis=1)
-    
+           
     return chunk
 
 def load_apply(ndf):
@@ -111,7 +109,7 @@ def load_apply(ndf):
 def load_numbers():
 
     newp_df = new_df.copy()
-    #newp_df = new_df.iloc[0:300].copy()
+   #newp_df = new_df.iloc[0:100].copy().reset_index()
     newp_df = newp_df.reset_index()    
     
     cpus = 50
@@ -123,10 +121,10 @@ def load_numbers():
     p.join()  
     
     parts = pd.concat(pool_results, axis=0)
-    
+
     pdt.assert_series_equal(parts['index'], newp_df['index'])
 
-    parts = parts.drop(['index'], axis=1)
+    parts = parts.drop(['NumMosquitos','index'], axis=1)
 
     return parts
 
@@ -188,8 +186,8 @@ if __name__ == '__main__':
     print("Processing Training Data")
     # read in training data
     df_train, df_comp, df_test = load_data("TRAIN/train_hex_weather.csv", "COMP/comp_hex_weather.csv", "TEST/test_hex_weather.csv")
-#    df_train.to_csv("TRAIN/train_hex_pred_I.csv", index=False)
-#    df_comp.to_csv("COMP/comp_hex_pred_I.csv", index=False)
-#    df_test.to_csv("TEST/test_hex_pred_I.csv", index=False)
+    df_train.to_csv("TRAIN/train_hex_pred_I.csv", index=False)
+    df_comp.to_csv("COMP/comp_hex_pred_I.csv", index=False)
+    df_test.to_csv("TEST/test_hex_pred_I.csv", index=False)
     
     print("Finished")

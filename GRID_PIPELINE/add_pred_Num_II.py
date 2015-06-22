@@ -97,9 +97,7 @@ def mean_num(chunk):
         chunk['Mean_Num_Lvl_2_cwbef'] = 0
         chunk['Min_Num_Lvl_2_cwbef'] = 0
         chunk['Max_Num_Lvl_2_cwbef'] = 0
-        
-    chunk = chunk.drop(['NumMosquitos'],axis=1)
-    
+           
     return chunk
 
 def load_apply(ndf):
@@ -117,17 +115,19 @@ def load_numbers():
     cpus = 50
     
     p = mp.Pool(processes=cpus)
+    
     split_dfs = np.array_split(newp_df,cpus)
+    
     pool_results = p.map(load_apply, split_dfs)
     p.close()
     p.join()  
     
     parts = pd.concat(pool_results, axis=0)
-    
+ 
     pdt.assert_series_equal(parts['index'], newp_df['index'])
 
-    parts = parts.drop(['index'], axis=1)
-
+    parts = parts.drop(['NumMosquitos', 'index'], axis=1)
+   
     return parts
 
 def load_data(path_train='train.csv', path_comp='comp.csv', path_test='test.csv'):

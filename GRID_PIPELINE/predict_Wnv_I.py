@@ -34,12 +34,13 @@ y_train = X_train.WnvPresent_mean
 
 # define columns to be dropped from X_dfs
 droppers_train = ['Date', 'NumMosquitos', 'WnvPresent_mean', 'WnvPresent', 'counter', 'HexCell', 'CodeSum']
-droppers_comp = ['Date', 'HexCell', 'CodeSum', 'NumMosquitos']
+droppers_comp = ['Date', 'HexCell', 'CodeSum']
 #droppers_test = ['Id', 'Date', 'HexCell', 'CodeSum']
 
 X_train = X_train.drop(droppers_train,axis=1)
 X_comp = X_comp.drop(droppers_comp,axis=1)
 #X_test = X_test.drop(droppers_test,axis=1)
+
 
 X_train.Species = species_encoder.fit_transform(X_train.Species)
 X_comp.Species = species_encoder.transform(X_comp.Species)
@@ -53,7 +54,7 @@ X_comp = scale(X_comp)
 
 clf.fit(X_train,y_train)
 
-y_comp = clf.predict(X_comp)[:,1]
+y_comp = clf.predict(X_comp)
 y_comp[y_comp<0]=0
 #y_test = clf.predict(X_test)
 
