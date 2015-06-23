@@ -4,8 +4,8 @@ from sklearn import cross_validation, preprocessing, metrics
 
 
 # Read in combined dfs
-df_train = pd.read_csv("../train_filled_new.csv")
-df_test = pd.read_csv("../test_filled_new.csv")
+df_train = pd.read_csv("subset_A_train.csv")
+df_test = pd.read_csv("subset_A_test.csv")
 
 
 # Assign unspecified culex to pipiens / restuans
@@ -64,5 +64,5 @@ not_droplist.append('WnvPresent')
 droplist = [var for var in df_train.columns if var not in not_droplist]
 df_train = df_train.drop(droplist,axis=1)
 
-df_train.to_csv('new_train_priors.csv')
-df_test.to_csv('new_test_priors.csv')
+df_train.to_csv('subset_B_train.csv')
+df_test.to_csv('subset_B_test.csv')
