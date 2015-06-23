@@ -97,7 +97,7 @@ def mean_num(chunk):
         chunk['Mean_Num_Lvl_2_cwbef'] = 0
         chunk['Min_Num_Lvl_2_cwbef'] = 0
         chunk['Max_Num_Lvl_2_cwbef'] = 0
-    
+           
     return chunk
 
 def load_apply(ndf):
@@ -109,10 +109,10 @@ def load_apply(ndf):
 def load_numbers():
 
     newp_df = new_df.copy()
-    #newp_df = new_df.iloc[0:300].copy()
+   #newp_df = new_df.iloc[0:100].copy().reset_index()
     newp_df = newp_df.reset_index()    
     
-    cpus = mp.cpu_count() 
+    cpus = 50
     
     p = mp.Pool(processes=cpus)
     split_dfs = np.array_split(newp_df,cpus)
@@ -121,10 +121,10 @@ def load_numbers():
     p.join()  
     
     parts = pd.concat(pool_results, axis=0)
-    
+
     pdt.assert_series_equal(parts['index'], newp_df['index'])
 
-    parts = parts.drop(['index'], axis=1)
+    parts = parts.drop(['NumMosquitos','index'], axis=1)
 
     return parts
 

@@ -18,7 +18,7 @@ HEX_CELL_VERT = HEX_CELL_HEIGHT * 3.0 / 4.0
 HEX_CELL_HORI = HEX_CELL_WIDTH
 
 # Load train and test datasets
-df_train = pd.read_csv('TRAIN/train_unified_traps.csv')
+df_train = pd.read_csv('TRAIN/train_dropped.csv')
 df_test = pd.read_csv('TEST/test_unified_traps.csv')
 
 # Find unique traps
@@ -253,6 +253,7 @@ def train_frame(hex_pos_grid, trap_dict):
     series_species = df_train.loc[:, 'Species']
     series_numm = df_train.loc[:, 'NumMosquitos']
     series_wnv = df_train.loc[:, 'WnvPresent']
+    
     
     new_df = pd.DataFrame(dict(Year = series_year,
                                Date = series_dates,

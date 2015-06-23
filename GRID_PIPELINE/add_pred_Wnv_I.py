@@ -99,7 +99,7 @@ def mean_num(chunk):
         chunk['Mean_Wnv_Lvl_2_cwbef'] = 0
         chunk['Min_Wnv_Lvl_2_cwbef'] = 0
         chunk['Max_Wnv_Lvl_2_cwbef'] = 0
-    
+           
     return chunk
 
 def load_apply(ndf):
@@ -114,7 +114,7 @@ def load_numbers():
     #newp_df = new_df.iloc[0:300].copy()
     newp_df = newp_df.reset_index()    
     
-    cpus = mp.cpu_count() 
+    cpus = 50
     
     p = mp.Pool(processes=cpus)
     split_dfs = np.array_split(newp_df,cpus)
@@ -126,7 +126,7 @@ def load_numbers():
     
     pdt.assert_series_equal(parts['index'], newp_df['index'])
 
-    parts = parts.drop(['index'], axis=1)
+    parts = parts.drop(['WnvPresent', 'index'], axis=1)
 
     return parts
 
@@ -160,13 +160,13 @@ series_year = df_num['Year_x']
 series_species = df_num['Species']
 series_hex_cell = df_num['HexCell']
 series_cw = df_num['Calender_Week']
-series_numm = df_num['NumMosquitos']
+series_wnv = df_num['WnvPresent']
 
 new_df = pd.DataFrame(dict(Year_x = series_year,
                            Calender_Week = series_cw, 
                            HexCell = series_hex_cell, 
                            Species = series_species, 
-                           NumMosquitos = series_numm)) 
+                           WnvPresent = series_wnv)) 
     
 mask_dict = {}                      
 for y in series_year.unique():
@@ -188,7 +188,7 @@ if __name__ == '__main__':
     print("Processing Training Data")
     # read in training data
     df_train, df_comp, df_test = load_data("TRAIN/train_hex_pred_II.csv", "COMP/comp_hex_pred_II.csv", "TEST/test_hex_pred_II.csv")
-    df_train.to_csv("TRAIN/train_hex_wnv_I_pred.csv", index=False)
+    df_train.to_csv("TRAIN/train_hex_wnv_pred_I.csv", index=False)
     df_comp.to_csv("COMP/comp_hex_wnv_pred_I.csv", index=False)
     df_test.to_csv("TEST/test_hex_wnv_pred_I.csv", index=False)
     

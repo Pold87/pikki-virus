@@ -269,7 +269,7 @@ if __name__ == '__main__':
     df_weather = load_weather()
     print("Processing Training Data")
     # read in training data
-    df_train = load_data(df_weather, "TRAIN/train_hex.csv")
+    df_train = load_data(df_weather, "TRAIN/train_hex_filled.csv")
     df_train.to_csv("TRAIN/train_hex_weather.csv", index=False)
     
     print("Processing Complementary Data")

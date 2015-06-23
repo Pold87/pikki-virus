@@ -51,15 +51,22 @@ merged.data <- joined.data
 
 n = nrow(merged.data)
 
-mapping <- read.csv("block_mapping.csv", header = T)
+mapping <- read.csv("voronoi_mapping.csv", header = T)
 
 merged.data$TrapID <- NA
+# for (i in 1:n)
+# {
+# 	merged.data[i,]$TrapID <- mapping$Block[which.min(abs(mapping$Latitude - merged.data[i,]$Latitude) + abs(mapping$Longitude - merged.data[i,]$Longitude))]
+# }
+
 for (i in 1:n)
 {
-	merged.data[i,]$TrapID <- mapping$Block[which.min(abs(mapping$Latitude - merged.data[i,]$Latitude) + abs(mapping$Longitude - merged.data[i,]$Longitude))]
+	merged.data[i,]$TrapID <- which.min(abs(mapping$Latitude - merged.data[i,]$Latitude) + abs(mapping$Longitude - merged.data[i,]$Longitude))
 }
 
-formula <- WnvPresent_DateTrapSpecies ~ f(Species) + f(Calendar_Week, model = "rw1", cyclic = TRUE) + f(TrapID, model = "besag", graph = "block.graph")
+merged.data$Week <- merged.data$Calendar_Week + merged.data$Year * 52
+
+formula <- WnvPresent_DateTrapSpecies ~ 1# + f(Species) + f(Calendar_Week, model = "rw1", cyclic = TRUE) + f(TrapID, model = "besag", graph = "block.graph")
 print("Fitting model ...")
 mod <- inla(formula, data = merged.data, control.predictor = list(link = 1), verbose = TRUE)
 
@@ -68,4 +75,4 @@ WnvPresent <- mod$summary.fitted.values$mean[(nrow(train.data) + 1):nrow(merged.
 Id <- 1:nrow(test.data)
 backup <- WnvPresent
 WnvPresent <- pmax(0, WnvPresent)
-write.csv(cbind(Id, WnvPresent), file = "result3.csv", row.names  = FALSE)
+write.csv(cbind(Id, WnvPresent), file = "result_new0.csv", row.names  = FALSE)

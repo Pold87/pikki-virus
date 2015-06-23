@@ -34,7 +34,7 @@ y_train = X_train.NumMosquitos_counter
 
 # define columns to be dropped from X_dfs
 droppers_train = ['Date', 'NumMosquitos', 'NumMosquitos_counter', 'WnvPresent', 'counter', 'HexCell', 'CodeSum']
-droppers_comp = ['Date', 'HexCell', 'CodeSum', 'NumMosquitos']
+droppers_comp = ['Date', 'HexCell', 'CodeSum']
 #droppers_test = ['Id', 'Date', 'HexCell', 'CodeSum']
 
 X_train = X_train.drop(droppers_train,axis=1)
