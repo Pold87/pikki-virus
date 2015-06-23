@@ -1,9 +1,10 @@
-from scipy.spatial import Delaunay, ConvexHull
+from scipy.spatial import Delaunay, ConvexHull, distance
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import itertools
+import sys
 
 
 locations = pd.read_csv('../unique_train.csv')[['Longitude', 'Latitude']]
@@ -11,29 +12,45 @@ locations = locations.drop_duplicates(['Longitude', 'Latitude'])
 locations = locations.values
 points = locations
 
-### make delaunay diagram
-tri = Delaunay(points)
+threshold = float(sys.argv[1])
 
-### remove convex hull for more sensible graph
-hull = ConvexHull(points)
-delete_indices = [];
-for tidx in range(tri.simplices.shape[0]):
-	for hidx in range(hull.simplices.shape[0]):
-		is_hull = (int((tri.simplices[tidx] == hull.simplices[hidx][0]).any()) + int((tri.simplices[tidx] == hull.simplices[hidx][1]).any())) == 2
-		if is_hull:
-			delete_indices.append(tidx)
-delete_indices = sorted(np.sort(delete_indices), reverse=True)
-for idx in delete_indices:
-	tri.simplices = np.delete(tri.simplices, idx, 0)
+### make delaunay diagram
+tri = Delaunay(points, incremental=True)
+simplices = tri.simplices	
 
 ### list neighbours
-find_neighbours = lambda x,triang: list(set(indx for simplex in triang.simplices if x in simplex for indx in simplex if indx !=x))
+find_neighbours = lambda x,simplices: list(set(indx for simplex in simplices if x in simplex for indx in simplex if indx !=x))
+neighbours = {}
+for pidx in range(points.size//2):
+	local_neighbours = find_neighbours(pidx, simplices)
+	neighbours[pidx] = local_neighbours
+	# print("%d : %s\n" % (pidx, ' '.join([str(neighbour) for neighbour in local_neighbours])))
+
+### find points which have a distance larger than threshold
+delete_indices = [];
+distances = []
+for point, local_neighbours in neighbours.items():
+	for neighbour in local_neighbours:
+		distances.append(distance.euclidean(locations[point], locations[neighbour]))
+		if distances[-1] > threshold:
+			for tidx in range(simplices.shape[0]):
+				is_too_long = (int((simplices[tidx] == point).any()) + int((simplices[tidx] == neighbour).any())) == 2
+				if is_too_long:
+					delete_indices.append(tidx)
+
+### delete those points
+delete_indices = sorted(np.sort(np.unique(delete_indices)), reverse=True)
+for idx in delete_indices:
+	simplices = np.delete(simplices, idx, 0)
+
+### update neighbours
+for pidx in range(points.size//2):
+	local_neighbours = find_neighbours(pidx, simplices)
+	neighbours[pidx] = local_neighbours
 
 ### print graph
 for pidx in range(points.size//2):
-	neighbours = find_neighbours(pidx, tri)
-	if neighbours != []:
-		print("%d : %s\n" % (pidx, ' '.join([str(neighbour) for neighbour in neighbours])))
+	print("%d : %d %s\n" % (pidx, len(neighbours[pidx]), ' '.join([str(neighbour) for neighbour in neighbours[pidx]])))
 
 ### plot map
 mapdata = np.loadtxt("../mapdata_copyright_openstreetmap_contributors.txt")
@@ -48,7 +65,11 @@ plt.imshow(mapdata,
            aspect=aspect)
 
 ### plot delaunay vertices which have end point
-plt.triplot(locations[:,0], locations[:,1], tri.simplices, 'k-')
+plt.triplot(locations[:,0], locations[:,1], tri.simplices, 'g-')
+for simplex in simplices:
+	plt.plot([locations[simplex[0],0], locations[simplex[1],0]], [locations[simplex[0],1], locations[simplex[1],1]], 'k-')
+	plt.plot([locations[simplex[1],0], locations[simplex[2],0]], [locations[simplex[1],1], locations[simplex[2],1]], 'k-')
+	plt.plot([locations[simplex[0],0], locations[simplex[2],0]], [locations[simplex[0],1], locations[simplex[2],1]], 'k-')
 
 ### plot traps
 plt.scatter(locations[:,0], locations[:,1], marker='x')
